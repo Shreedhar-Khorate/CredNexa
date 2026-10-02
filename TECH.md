@@ -70,6 +70,10 @@ graph TD
 - **Security:** Row Level Security (RLS) policies ensuring users only query their own applications while admins access system-wide analytics.
 - **Auth Provider:** Supabase Auth (JWT bearer tokens, email/password or OAuth)
 
+### 2.4 LLM Reasoning Engines
+- **Primary Model:** [Google Gemini](https://ai.google.dev/) (`gemini-1.5-flash`) - Generates narrative explanations, decision drivers, and applicant risk summaries based on model outputs.
+- **Fallback Provider:** [Groq Cloud](https://groq.com/) (`llama-3.3-70b-versatile`) - Automatic high-availability API fallback in case of primary model rate-limits or service outages.
+
 ---
 
 ## 3. Database Schema (Supabase PostgreSQL)

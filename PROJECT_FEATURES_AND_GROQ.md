@@ -1,7 +1,7 @@
-CredNexa — Project Features & Groq LLM Integration
+CredNexa — Project Features & LLM Integration (Gemini Main & Groq Fallback)
 Project: CredNexa — Intelligent Loan Decision-Support and Credit Risk Analytics Platform
-Document: Product features, system architecture, and Groq-powered LLM reasoning design
-Status: Existing capabilities and proposed enhancements are explicitly distinguished.
+Document: Product features, system architecture, and Gemini/Groq-powered LLM reasoning design
+Status: Gemini active as primary LLM engine with Groq configured as fallback provider.
 
 1. Project Overview
 CredNexa is an educational, dataset-driven loan decision-support platform. It combines supervised machine learning, applicant segmentation, explainability, and scenario analysis to help users understand how an applicant profile relates to patterns learned from the project dataset.
@@ -14,10 +14,10 @@ Objectives
 - Group applicant profiles using the clustering model.
 - Let users explore how changes to supported inputs affect model outputs.
 - Provide assessment history and administrative views when persistent storage is connected.
-- Add a Groq-powered explanation layer without allowing the LLM to alter the ML prediction.
+- Add a Gemini-powered explanation layer (with Groq API fallback) without allowing the LLM to alter the ML prediction.
 Core principle
 The ML model calculates the prediction; the LLM explains the available evidence.
-Groq must not invent applicant data, calculate a new approval probability, override the model, or make an independent lending decision.
+Gemini / Groq must not invent applicant data, calculate a new approval probability, override the model, or make an independent lending decision.
 2. Current Project Capabilities
 This section reflects the repository structure and implementation described in the repository review. Verify the current branch before treating every item as complete.
 2.1 Machine Learning pipeline
@@ -91,9 +91,9 @@ Keep technology documentation aligned with the actual package configuration.
 The backend uses FastAPI and Pydantic, with scikit-learn, Pandas, NumPy, and Joblib in the ML stack.
 The previous repository review found in-memory application storage in the backend, while Supabase/PostgreSQL persistence was described in technical documentation. In-memory records are lost when the backend restarts.
 Before describing application history as persistent, connect and test the database. Likewise, describe authentication as planned until registration, login, session/token validation, and authorization are implemented in code.
-3. Proposed Groq LLM Reasoning Layer
+3. Proposed Gemini & Groq LLM Reasoning Layer
 3.1 Purpose
-Groq provides access to hosted language models through an API. CredNexa can use a Groq-served LLM to convert structured ML outputs into clear explanations.
+Google Gemini (`gemini-1.5-flash`) provides hosted primary language model access, with Groq (`llama-3.3-70b-versatile`) configured as an API fallback service. CredNexa uses the LLM layer to convert structured ML outputs into clear explanations.
 The LLM layer can:
 - Explain the model prediction in understandable language.
 - Summarise structured decision factors returned by the backend.
@@ -109,8 +109,9 @@ Calibration/threshold logic	Apply saved calibration and threshold	Allow LLM to c
 Explainability service	Produce supported feature contributions	Invent feature impacts
 Clustering service	Assign cluster and return profile	Treat cluster as a credit score
 What-if service	Re-run inference for changed inputs	Promise real-world approval changes
-Groq LLM service	Explain supplied structured evidence	Predict independently or override ML
-Frontend	Display results and explanations	Store Groq API keys in browser code
+Gemini LLM Service (Primary)	Explain supplied structured evidence	Predict independently or override ML
+Groq LLM Service (Fallback)	Provide fallback explanation if Gemini is offline	Predict independently or override ML
+Frontend	Display results and explanations	Store LLM API keys in browser code
 
 
 3.3 Recommended workflow
@@ -121,11 +122,11 @@ Frontend	Display results and explanations	Store Groq API keys in browser code
 5. Explainability and clustering services return structured outputs.
 6. The assessment is saved if persistent storage is configured.
 7. The user requests an AI explanation.
-8. FastAPI sends compact, sanitised evidence to Groq.
-9. Groq returns a structured explanation.
+8. FastAPI sends compact, sanitised evidence to Gemini (primary).
+9. If Gemini is unreachable, FastAPI automatically falls back to Groq.
 10. FastAPI validates the response and returns it to the frontend.
-The ML result must remain available if Groq is unavailable. LLM explanation is optional and must not block the core assessment.
-4. Groq Integration Architecture
+The ML result must remain available if LLM services are unavailable. LLM explanation is optional and must not block the core assessment.
+4. LLM Integration Architecture
 React Frontend
     |
     | POST /api/predictions
@@ -147,9 +148,10 @@ Structured Assessment Evidence
     |
     | POST /api/llm/explain
     v
-Groq LLM Service
+Gemini / Groq LLM Router
+    +--> Primary: Gemini API Client (gemini-1.5-flash)
+    +--> Fallback: Groq API Client (llama-3.3-70b-versatile)
     +--> Prompt Builder
-    +--> Groq API Client
     +--> JSON Response Validation
     +--> Evidence / Safety Checks
     |
@@ -158,45 +160,46 @@ Explanation Response
     |
     v
 React Explanation Panel
-Suggested backend modules
-Adapt these to the repository's existing layout rather than creating duplicate modules.
-backend/
-├── routers/
-│   ├── prediction.py
-│   └── llm.py
-└── services/
-    ├── prediction_service.py
-    ├── feature_engineering.py
-    ├── explainability_service.py
-    ├── segmentation_service.py
-    ├── what_if_service.py
-    └── llm/
-        ├── groq_client.py
-        ├── prompt_builder.py
-        ├── explanation_service.py
-        └── response_schema.py
-5. Groq Setup
-5.1 API key
-1. Create or sign in to a GroqCloud account.
-2. Create an API key in the GroqCloud console.
-3. Store it in the backend environment.
-4. Never commit it to Git.
-5. Never expose it through a VITE_ variable or frontend source code.
-Backend .env:
+
+5. Gemini & Groq Setup
+5.1 Environment Configuration
+1. Store Gemini & Groq keys in the backend environment.
+2. Never commit secrets to Git.
+3. Never expose secrets through `VITE_` variables or frontend source code.
+
+Backend `.env`:
+```env
+# Primary LLM Provider: Google Gemini
+GEMINI_API_KEY=your_gemini_api_key
+GEMINI_MODEL=gemini-1.5-flash
+GEMINI_TEMPERATURE=0.2
+GEMINI_MAX_TOKENS=700
+GEMINI_TIMEOUT_SECONDS=10.0
+
+# Fallback LLM Provider: Groq
 GROQ_API_KEY=your_groq_api_key
-GROQ_MODEL=your_available_groq_model_id
+GROQ_MODEL=llama-3.3-70b-versatile
 GROQ_TEMPERATURE=0.2
 GROQ_MAX_TOKENS=700
-Use a model ID currently available to the account. Model names, availability, context limits, and rate limits can change, so verify the current Groq model catalogue.
-Add to .gitignore:
-.env
-.env.*
-!.env.example
-Safe .env.example:
+GROQ_TIMEOUT_SECONDS=10.0
+```
+
+Safe `.env.example`:
+```env
+# Primary LLM Provider: Google Gemini
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-1.5-flash
+GEMINI_TEMPERATURE=0.2
+GEMINI_MAX_TOKENS=700
+GEMINI_TIMEOUT_SECONDS=10.0
+
+# Fallback LLM Provider: Groq
 GROQ_API_KEY=
-GROQ_MODEL=
+GROQ_MODEL=llama-3.3-70b-versatile
 GROQ_TEMPERATURE=0.2
 GROQ_MAX_TOKENS=700
+GROQ_TIMEOUT_SECONDS=10.0
+```
 5.2 Install SDK
 pip install groq
 Add the dependency to the backend requirements file and pin a tested version for reproducible deployments.

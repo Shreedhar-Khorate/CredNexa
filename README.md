@@ -15,6 +15,7 @@ CredNexa is a production-style Machine Learning module for automated loan eligib
 - **Calibrated Probabilities & Thresholding**: Calibrated classifier (`CalibratedClassifierCV`) paired with optimal thresholding.
 - **K-Means Applicant Segmentation**: Optimal $K=2$ segmentation pipeline based on silhouette score analysis ($S = 0.6441$).
 - **Explainability & What-If Suggestions**: `predict(payload)` returns per-feature contribution factors and actionable what-if recommendations.
+- **LLM Reasoning Layer**: Powered by **Google Gemini** (`gemini-1.5-flash`) as the primary model with **Groq** (`llama-3.3-70b-versatile`) as an automatic API fallback provider for plain-language risk explanations.
 
 ## Directory Structure
 

@@ -1,16 +1,23 @@
 """FastAPI Backend Server for CredNexa Loan Eligibility System."""
 
 import json
+import os
 import sys
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-# Ensure project root is in sys.path
+from dotenv import load_dotenv
+
+# Ensure project root is in sys.path and load environment variables
 BASE_DIR = Path(__file__).resolve().parent.parent
 if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
+
+ENV_PATH = BASE_DIR / "backend" / ".env"
+if ENV_PATH.exists():
+    load_dotenv(dotenv_path=ENV_PATH)
 
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Query, status
@@ -86,15 +93,23 @@ class PredictionResponse(BaseModel):
 # --- Endpoints ---
 @app.get("/api/v1/health", summary="Health Status")
 def health_check():
-    """Return backend health, model artifact existence, and active version."""
+    """Return backend health, model artifact existence, active version, and LLM configuration."""
     model_loaded = MODEL_PATH.exists()
     metrics_loaded = METRICS_PATH.exists()
+    gemini_key = os.getenv("GEMINI_API_KEY", "")
     return {
         "status": "healthy",
         "service": "CredNexa Backend API",
         "model_loaded": model_loaded,
         "metrics_loaded": metrics_loaded,
         "active_version": "v1",
+        "llm_config": {
+            "gemini_configured": bool(gemini_key and gemini_key != "your_gemini_api_key_here"),
+            "model": os.getenv("GEMINI_MODEL", "gemini-1.5-flash"),
+            "temperature": float(os.getenv("GEMINI_TEMPERATURE", 0.2)),
+            "max_tokens": int(os.getenv("GEMINI_MAX_TOKENS", 700)),
+            "timeout_seconds": float(os.getenv("GEMINI_TIMEOUT_SECONDS", 10.0)),
+        },
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 

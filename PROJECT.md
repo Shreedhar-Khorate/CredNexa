@@ -51,6 +51,8 @@ The platform processes applicant financial metrics (income, loan size, term, cre
 | **ML Core** | Scikit-Learn, Pandas, NumPy | Pipeline transformations, cross-validation, calibration, and inference. |
 | **Artifact Storage** | Joblib & JSON | Serialized production model files and metadata metrics. |
 | **Database & Auth** | Supabase (PostgreSQL) | Managed PostgreSQL schema with Row Level Security (RLS) policies. |
+| **LLM Engine (Primary)** | Google Gemini (`gemini-1.5-flash`) | Generates natural language decision summaries and risk factor explanations. |
+| **LLM Engine (Fallback)** | Groq (`llama-3.3-70b-versatile`) | High-availability API fallback provider if primary LLM service is offline. |
 | **Testing** | Pytest 9.0+ | Automated test suite for preprocessing, API contracts, and robustness. |
 
 ---
