@@ -6,10 +6,13 @@ Fallback Engine: Groq API (llama-3.3-70b-versatile)
 """
 
 import json
+import logging
 import os
 import urllib.request
 import urllib.error
 from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger("crednexa_llm_service")
 
 SYSTEM_PROMPT = """You are CredNexa's automated assessment explanation assistant.
 Your role is to explain structured outputs produced by CredNexa's machine-learning and credit risk analytics service.
@@ -178,22 +181,25 @@ def explain_assessment(assessment_data: Dict[str, Any]) -> Dict[str, Any]:
     # 1. Try Primary Engine: Google Gemini API
     if gemini_key and gemini_key != "your_gemini_api_key":
         try:
+            logger.info(f"Invoking primary LLM engine: Google Gemini ({gemini_model})")
             parsed = call_gemini_api(prompt, gemini_key, gemini_model, gemini_temp, gemini_max_tokens, gemini_timeout)
             parsed["engine_used"] = f"Google Gemini ({gemini_model}) - Primary"
+            logger.info("Successfully generated explanation via Google Gemini")
             return parsed
         except Exception as gemini_err:
-            # Fall through to Groq
-            pass
+            logger.warning(f"Google Gemini primary call failed ({gemini_err}). Triggering Groq fallback...")
 
     # 2. Try Fallback Engine: Groq API
     if groq_key and groq_key != "your_groq_api_key":
         try:
+            logger.info(f"Invoking fallback LLM engine: Groq Cloud ({groq_model})")
             parsed = call_groq_api(prompt, groq_key, groq_model, groq_temp, groq_max_tokens, groq_timeout)
             parsed["engine_used"] = f"Groq Cloud ({groq_model}) - Fallback"
+            logger.info("Successfully generated explanation via Groq Cloud")
             return parsed
         except Exception as groq_err:
-            # Fall through to template fallback
-            pass
+            logger.warning(f"Groq fallback call failed ({groq_err}). Using Evidence Template...")
 
     # 3. Safe Evidence Template Fallback
+    logger.info("Generating safe Evidence Template explanation fallback")
     return generate_fallback_explanation(assessment_data, reason="Local Evidence Engine")

@@ -1,10 +1,18 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Sparkles, Bot, AlertTriangle, CheckCircle, Cpu, RefreshCw, ShieldAlert } from 'lucide-react';
 import { fetchAiExplanation } from '../services/api';
 
 export default function AiExplanationCard({ assessment }) {
-  const [explanation, setExplanation] = useState(null);
+  const [explanation, setExplanation] = useState(assessment?.llm_explanation || null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (assessment?.llm_explanation) {
+      setExplanation(assessment.llm_explanation);
+    } else {
+      setExplanation(null);
+    }
+  }, [assessment]);
 
   const handleGenerate = async () => {
     setLoading(true);

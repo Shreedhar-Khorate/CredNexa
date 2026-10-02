@@ -44,3 +44,12 @@
   - Interactive "Explain with AI" button with loading spinner state.
   - Active LLM Engine badge displaying `Google Gemini (gemini-1.5-flash) - Primary` or `Groq Cloud (llama-3.3-70b-versatile) - Fallback`.
   - Structured narrative summary, threshold rationale, decision driver cards, and responsible AI disclaimer.
+
+### [2026-10-03 00:38:00] - Feature 5: Backend Auto-LLM Return & Dual Stack Logging System
+- **Modules:** [`backend/main.py`](file:///c:/Users/Shreedhar%20Khorate/Desktop/CredNexa/backend/main.py), [`backend/services/llm_service.py`](file:///c:/Users/Shreedhar%20Khorate/Desktop/CredNexa/backend/services/llm_service.py), [`frontend/src/components/AiExplanationCard.jsx`](file:///c:/Users/Shreedhar%20Khorate/Desktop/CredNexa/frontend/src/components/AiExplanationCard.jsx)
+- **Backend Enhancements:**
+  - `PredictionResponse` schema extended with `llm_explanation: Optional[Dict[str, Any]] = None`.
+  - `POST /api/v1/predict` now automatically invokes the Gemini/Groq LLM router and attaches the structured LLM response directly in the single-pass prediction output.
+  - Formatted Python logging (`crednexa_backend`, `crednexa_llm_service`) records application IDs, decision probabilities, LLM engine invocations, and failover warnings in real-time.
+- **Frontend Enhancements:**
+  - `AiExplanationCard` automatically binds to `assessment.llm_explanation` upon prediction return, while preserving manual re-triggering and offline simulation support.

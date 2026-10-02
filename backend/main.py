@@ -1,6 +1,5 @@
-"""FastAPI Backend Server for CredNexa Loan Eligibility System."""
-
 import json
+import logging
 import os
 import sys
 import uuid
@@ -9,6 +8,13 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from dotenv import load_dotenv
+
+# Set up logging format and logger instance
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
+logger = logging.getLogger("crednexa_backend")
 
 # Ensure project root is in sys.path and load environment variables
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -49,17 +55,17 @@ APPLICATIONS_DB: List[Dict[str, Any]] = []
 
 # --- Pydantic Data Schemas ---
 class LoanApplicationRequest(BaseModel):
-    applicant_name: str = Field(..., example="Jane Doe", description="Applicant full name")
-    ApplicantIncome: float = Field(..., ge=0, example=55000, description="Monthly applicant income in INR")
-    CoapplicantIncome: float = Field(0.0, ge=0, example=15000, description="Monthly co-applicant income in INR")
-    LoanAmount: float = Field(..., gt=0, example=250, description="Requested loan amount in thousands (INR)")
-    Loan_Amount_Term: float = Field(360.0, gt=0, example=360, description="Loan term in months")
-    Credit_History: str = Field("1", example="1", description="Credit history flag: '1', '0', or 'Unknown'")
-    Property_Area: str = Field("Semiurban", example="Semiurban", description="Urban, Semiurban, Rural, or Metro")
-    Married: str = Field("Yes", example="Yes", description="Married status: Yes, No, Unknown")
-    Education: str = Field("Graduate", example="Graduate", description="Graduate, Not Graduate, Unknown")
-    Self_Employed: str = Field("No", example="No", description="Yes, No, Unknown")
-    Dependents: str = Field("0", example="0", description="0, 1, 2, 3+, Unknown")
+    applicant_name: str = Field(..., description="Applicant full name")
+    ApplicantIncome: float = Field(..., ge=0, description="Monthly applicant income in INR")
+    CoapplicantIncome: float = Field(0.0, ge=0, description="Monthly co-applicant income in INR")
+    LoanAmount: float = Field(..., gt=0, description="Requested loan amount in thousands (INR)")
+    Loan_Amount_Term: float = Field(360.0, gt=0, description="Loan term in months")
+    Credit_History: str = Field("1", description="Credit history flag: '1', '0', or 'Unknown'")
+    Property_Area: str = Field("Semiurban", description="Urban, Semiurban, Rural, or Metro")
+    Married: str = Field("Yes", description="Married status: Yes, No, Unknown")
+    Education: str = Field("Graduate", description="Graduate, Not Graduate, Unknown")
+    Self_Employed: str = Field("No", description="Yes, No, Unknown")
+    Dependents: str = Field("0", description="0, 1, 2, 3+, Unknown")
 
 
 class TopFactor(BaseModel):
@@ -87,6 +93,7 @@ class PredictionResponse(BaseModel):
     segment: SegmentInfo
     top_factors: List[TopFactor]
     suggestions: List[Suggestion]
+    llm_explanation: Optional[Dict[str, Any]] = None
     model_version: str
     created_at: str
 
@@ -98,6 +105,7 @@ def health_check():
     model_loaded = MODEL_PATH.exists()
     metrics_loaded = METRICS_PATH.exists()
     gemini_key = os.getenv("GEMINI_API_KEY", "")
+    logger.info("Health check endpoint queried")
     return {
         "status": "healthy",
         "service": "CredNexa Backend API",
@@ -117,10 +125,12 @@ def health_check():
 
 @app.post("/api/v1/predict", response_model=PredictionResponse, summary="Submit Loan Application")
 def predict_loan_eligibility(payload: LoanApplicationRequest):
-    """Execute ML prediction pipeline for an incoming loan application payload."""
+    """Execute ML prediction pipeline and return prediction with attached LLM reasoning explanation."""
     try:
         raw_dict = payload.model_dump()
         applicant_name = raw_dict.pop("applicant_name", "Anonymous Applicant")
+
+        logger.info(f"Processing loan application for: {applicant_name}")
 
         # Call core ML prediction engine
         res = predict(raw_dict)
@@ -142,9 +152,19 @@ def predict_loan_eligibility(payload: LoanApplicationRequest):
             "created_at": created_at,
         }
 
+        # Generate evidence-grounded LLM explanation directly in prediction response
+        try:
+            explanation = explain_assessment(record)
+            record["llm_explanation"] = explanation
+            logger.info(f"Generated LLM explanation using engine: {explanation.get('engine_used')}")
+        except Exception as llm_err:
+            logger.warning(f"Failed to generate LLM explanation on predict: {llm_err}")
+            record["llm_explanation"] = None
+
         # Store in historical log
         APPLICATIONS_DB.insert(0, record)
 
+        logger.info(f"Application {app_id} evaluated: decision={res['decision']}, prob={res['probability']:.4f}")
         return record
 
     except ValidationError as ve:
