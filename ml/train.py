@@ -213,24 +213,23 @@ def run_training(data_path: Path = RAW_DATA_PATH):
         print(f"{name:34s} | CV Acc: {cv_metrics['accuracy']:.4f} ± {acc_std:.4f} | CV AUC: {auc_str} | Holdout Acc: {holdout_metrics['accuracy']:.4f} | Holdout AUC: {holdout_metrics['roc_auc'] if holdout_metrics['roc_auc'] else 'N/A'}")
 
     # =========================================================================
-    # THRESHOLD SELECTION FROM TRAIN OOF PREDICTIONS ONLY (NEVER HOLDOUT)
+    # THRESHOLD SELECTION FROM CALIBRATED TRAIN OOF PREDICTIONS ONLY
     # =========================================================================
-    # Line 186-196: Select optimal threshold using Out-Of-Fold train predictions
     tuned_logreg_pipe = candidate_models["Logistic Regression (Tuned C=0.1)"]
-    oof_train_probs = cross_val_predict(tuned_logreg_pipe, X_train, y_train, cv=cv_5fold, method="predict_proba")[:, 1]
+    calibrated_clf = CalibratedClassifierCV(estimator=tuned_logreg_pipe, cv=5, method="sigmoid")
+    
+    # 1. Compute out-of-fold probabilities on TRAIN set from the CALIBRATED pipeline
+    oof_calibrated_probs = cross_val_predict(calibrated_clf, X_train, y_train, cv=cv_5fold, method="predict_proba")[:, 1]
 
-    precisions_tr, recalls_tr, thresholds_tr = precision_recall_curve(y_train, oof_train_probs)
+    # 2. Pick threshold maximizing F1 on train OOF calibrated probabilities (no clipping)
+    precisions_tr, recalls_tr, thresholds_tr = precision_recall_curve(y_train, oof_calibrated_probs)
     f1_scores_tr = 2 * (precisions_tr * recalls_tr) / (precisions_tr + recalls_tr + 1e-10)
     best_tr_idx = np.argmax(f1_scores_tr)
-
     chosen_threshold = float(thresholds_tr[best_tr_idx]) if best_tr_idx < len(thresholds_tr) else DEFAULT_THRESHOLD
-    chosen_threshold = float(np.clip(chosen_threshold, 0.45, 0.65))
-    print(f"\n[THRESHOLD SELECTION] Chosen threshold derived from TRAIN Out-Of-Fold predictions ONLY: {chosen_threshold:.4f}")
+    print(f"\n[THRESHOLD SELECTION] Chosen threshold from Calibrated TRAIN Out-Of-Fold predictions: {chosen_threshold:.6f}")
     # =========================================================================
 
-    # Fit final calibrated classifier on full training set
-    tuned_logreg_pipe.fit(X_train, y_train)
-    calibrated_clf = CalibratedClassifierCV(estimator=tuned_logreg_pipe, cv=5, method="sigmoid")
+    # Fit calibrated classifier on full training set
     calibrated_clf.fit(X_train, y_train)
 
     # Evaluate final calibrated model on Holdout using the TRAIN-derived threshold

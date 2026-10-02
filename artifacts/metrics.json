@@ -170,10 +170,10 @@
     }
   },
   "final_calibrated_holdout": {
-    "accuracy": 0.8032786885245902,
-    "precision": 0.7941176470588235,
-    "recall": 0.9642857142857143,
-    "f1_score": 0.8709677419354839,
+    "accuracy": 0.819672131147541,
+    "precision": 0.7980769230769231,
+    "recall": 0.9880952380952381,
+    "f1_score": 0.8829787234042553,
     "rejected_recall": 0.4473684210526316,
     "roc_auc": 0.8226817042606517,
     "brier_score": 0.14312856705850963,
@@ -183,12 +183,12 @@
         21
       ],
       [
-        3,
-        81
+        1,
+        83
       ]
     ]
   },
-  "chosen_threshold": 0.49732124750844786,
+  "chosen_threshold": 0.41452242196943023,
   "threshold_selection_source": "Train Out-Of-Fold predictions (StratifiedKFold cv=5)",
   "model_choice_rationale": "Logistic Regression chosen for baseline parity, linear feature explainability, smooth probability calibration, and robust cross-validation accuracy.",
   "metadata": {
