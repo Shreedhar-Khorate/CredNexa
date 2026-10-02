@@ -156,9 +156,10 @@ def predict_loan_eligibility(payload: LoanApplicationRequest):
         try:
             explanation = explain_assessment(record)
             record["llm_explanation"] = explanation
-            logger.info(f"Generated LLM explanation using engine: {explanation.get('engine_used')}")
+            logger.info("Generated LLM Explanation Engine: %s", explanation.get("engine_used"))
+            logger.info("FULL LLM EXPLANATION RESPONSE LOG:\n%s", json.dumps(explanation, indent=2))
         except Exception as llm_err:
-            logger.warning(f"Failed to generate LLM explanation on predict: {llm_err}")
+            logger.warning("Failed to generate LLM explanation on predict: %s", llm_err)
             record["llm_explanation"] = None
 
         # Store in historical log
@@ -221,6 +222,7 @@ def explain_assessment_payload(payload: Dict[str, Any]):
     """Generate structured AI explanation for an in-memory assessment object."""
     try:
         explanation = explain_assessment(payload)
+        logger.info("FULL LLM EXPLANATION RESPONSE LOG:\n%s", json.dumps(explanation, indent=2))
         return {
             "status": "success",
             "explanation": explanation

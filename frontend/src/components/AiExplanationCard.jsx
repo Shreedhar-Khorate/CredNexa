@@ -9,6 +9,13 @@ export default function AiExplanationCard({ assessment }) {
   useEffect(() => {
     if (assessment?.llm_explanation) {
       setExplanation(assessment.llm_explanation);
+    } else if (assessment) {
+      // Auto-fetch explanation if not present in initial prediction response
+      setLoading(true);
+      fetchAiExplanation(assessment)
+        .then((data) => setExplanation(data))
+        .catch((err) => console.error('Failed to auto-fetch AI explanation:', err))
+        .finally(() => setLoading(false));
     } else {
       setExplanation(null);
     }
@@ -83,6 +90,21 @@ export default function AiExplanationCard({ assessment }) {
           <div className="p-4 rounded-xl bg-indigo-950/30 border border-indigo-800/40 text-indigo-100">
             <p className="font-medium leading-relaxed">{explanation.summary}</p>
           </div>
+
+          {/* 2-Paragraph Detailed AI Narrative */}
+          {explanation.detailed_narrative && (
+            <div className="p-4 rounded-xl bg-purple-950/20 border border-purple-800/30 space-y-3 text-slate-200">
+              <h4 className="text-xs font-semibold text-purple-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Bot className="w-4 h-4 text-purple-400" />
+                Comprehensive 2-Paragraph Decision Analysis
+              </h4>
+              {explanation.detailed_narrative.split("\n\n").map((para, idx) => (
+                <p key={idx} className="text-xs leading-relaxed text-slate-300">
+                  {para}
+                </p>
+              ))}
+            </div>
+          )}
 
           {/* Prediction Explanation */}
           <div className="p-4 rounded-xl bg-slate-950/40 border border-slate-800">
