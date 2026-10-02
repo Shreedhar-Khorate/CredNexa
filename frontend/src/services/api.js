@@ -64,3 +64,31 @@ export const fetchAdminMetrics = async () => {
     return null;
   }
 };
+
+export const fetchAiExplanation = async (assessmentPayload) => {
+  try {
+    const res = await apiClient.post('/llm/explain', assessmentPayload);
+    return res.data.explanation;
+  } catch (err) {
+    console.warn('Backend LLM endpoint offline, returning simulated AI explanation.');
+    const decision = assessmentPayload.decision || 'Approved';
+    const prob = assessmentPayload.probability || 0.84;
+    return {
+      summary: `The ML model evaluated this assessment and returned a decision of '${decision}' with an approval probability of ${(prob * 100).toFixed(1)}%.`,
+      prediction_explanation: `The calculated probability (${prob.toFixed(3)}) is ${decision === 'Approved' ? 'above' : 'below'} the decision threshold of ${assessmentPayload.threshold || 0.415}.`,
+      key_factors: assessmentPayload.top_factors ? assessmentPayload.top_factors.map(f => ({
+        feature: f.feature,
+        explanation: `${f.feature} contributed ${f.direction === 'positive' ? 'positively' : 'negatively'} to the decision.`
+      })) : [],
+      segment_explanation: `Assigned to segment: ${assessmentPayload.segment?.name || 'Standard Segment'}.`,
+      suggestions_explanation: 'Consider updating credit profile or adjusting requested loan size for better odds.',
+      limitations: [
+        'Prediction is derived from project historical training data.',
+        'This is a decision-support demonstration tool.'
+      ],
+      disclaimer: 'Educational decision support. Not for binding bank lending decisions.',
+      engine_used: 'Standalone AI Simulation'
+    };
+  }
+};
+

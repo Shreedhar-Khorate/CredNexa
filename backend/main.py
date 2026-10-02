@@ -26,6 +26,7 @@ from pydantic import BaseModel, Field
 
 from ml.config import ARTIFACTS_DIR, COEFFS_PATH, METRICS_PATH, MODEL_PATH
 from ml.predict import ValidationError, predict
+from backend.services.llm_service import explain_assessment
 
 app = FastAPI(
     title="CredNexa API",
@@ -195,6 +196,40 @@ def get_admin_metrics():
     }
 
 
+@app.post("/api/v1/llm/explain", summary="Generate AI Explanation from Assessment Object")
+def explain_assessment_payload(payload: Dict[str, Any]):
+    """Generate structured AI explanation for an in-memory assessment object."""
+    try:
+        explanation = explain_assessment(payload)
+        return {
+            "status": "success",
+            "explanation": explanation
+        }
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@app.post("/api/v1/llm/explain/{application_id}", summary="Generate AI Explanation by Application UUID")
+def explain_application_by_id(application_id: str):
+    """Retrieve saved application by ID and generate AI explanation."""
+    target_record = None
+    for app_record in APPLICATIONS_DB:
+        if app_record["id"] == application_id:
+            target_record = app_record
+            break
+            
+    if not target_record:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application record not found")
+        
+    explanation = explain_assessment(target_record)
+    return {
+        "status": "success",
+        "application_id": application_id,
+        "explanation": explanation
+    }
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)
+

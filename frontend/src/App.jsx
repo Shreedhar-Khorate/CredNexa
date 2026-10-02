@@ -4,6 +4,7 @@ import LoanForm from './components/LoanForm';
 import ProbabilityGauge from './components/ProbabilityGauge';
 import ExplainabilityCard from './components/ExplainabilityCard';
 import SuggestionsCard from './components/SuggestionsCard';
+import AiExplanationCard from './components/AiExplanationCard';
 import AdminDashboard from './components/AdminDashboard';
 import HistoryTable from './components/HistoryTable';
 import { checkHealth, submitApplication, fetchApplications } from './services/api';
@@ -89,6 +90,7 @@ export default function App() {
                   <div className="lg:col-span-2 space-y-6">
                     <ExplainabilityCard topFactors={result.top_factors} />
                     <SuggestionsCard suggestions={result.suggestions} />
+                    <AiExplanationCard assessment={result} />
                   </div>
                 </div>
               </div>
