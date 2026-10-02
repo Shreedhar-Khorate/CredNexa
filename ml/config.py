@@ -9,6 +9,10 @@ DATA_DIR = BASE_DIR / "data"
 ARTIFACTS_DIR = BASE_DIR / "artifacts"
 
 RAW_DATA_PATH = DATA_DIR / "Loan_Data.csv"
+TRAIN_DATA_PATH = DATA_DIR / "train.csv"
+TEST_DATA_PATH = DATA_DIR / "test.csv"
+HISTORICAL_SEED_PATH = DATA_DIR / "historical_seed.csv"
+
 MODEL_PATH = ARTIFACTS_DIR / "model_v1.joblib"
 CLUSTER_PATH = ARTIFACTS_DIR / "cluster_v1.joblib"
 METRICS_PATH = ARTIFACTS_DIR / "metrics.json"
@@ -43,7 +47,6 @@ CATEGORICAL_FEATURES = [
 
 CLUSTER_FEATURES = [
     "Log_ApplicantIncome",
+    "Log_CoapplicantIncome",
     "Log_LoanAmount",
-    "LoanToIncome",
-    "EMI",
 ]

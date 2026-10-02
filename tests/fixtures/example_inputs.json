@@ -1,0 +1,62 @@
+{
+  "valid_applicant": {
+    "ApplicantIncome": 5000,
+    "CoapplicantIncome": 1500,
+    "LoanAmount": 150,
+    "Loan_Amount_Term": 360,
+    "Credit_History": "1",
+    "Property_Area": "Semiurban",
+    "Married": "Yes",
+    "Education": "Graduate",
+    "Self_Employed": "No",
+    "Dependents": "0"
+  },
+  "high_income_applicant": {
+    "ApplicantIncome": 50000,
+    "CoapplicantIncome": 0,
+    "LoanAmount": 300,
+    "Loan_Amount_Term": 360,
+    "Credit_History": "1",
+    "Property_Area": "Urban",
+    "Married": "Yes",
+    "Education": "Graduate",
+    "Self_Employed": "Yes",
+    "Dependents": "2"
+  },
+  "bad_credit_applicant": {
+    "ApplicantIncome": 4000,
+    "CoapplicantIncome": 0,
+    "LoanAmount": 120,
+    "Loan_Amount_Term": 360,
+    "Credit_History": "0",
+    "Property_Area": "Rural",
+    "Married": "No",
+    "Education": "Not Graduate",
+    "Self_Employed": "No",
+    "Dependents": "1"
+  },
+  "short_term_applicant": {
+    "ApplicantIncome": 6000,
+    "CoapplicantIncome": 2000,
+    "LoanAmount": 100,
+    "Loan_Amount_Term": 12,
+    "Credit_History": "1",
+    "Property_Area": "Urban",
+    "Married": "Yes",
+    "Education": "Graduate",
+    "Self_Employed": "No",
+    "Dependents": "0"
+  },
+  "long_term_applicant": {
+    "ApplicantIncome": 4500,
+    "CoapplicantIncome": 0,
+    "LoanAmount": 200,
+    "Loan_Amount_Term": 480,
+    "Credit_History": "1",
+    "Property_Area": "Semiurban",
+    "Married": "No",
+    "Education": "Graduate",
+    "Self_Employed": "No",
+    "Dependents": "0"
+  }
+}

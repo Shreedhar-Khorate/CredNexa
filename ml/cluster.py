@@ -37,7 +37,7 @@ class CredNexaClusterer:
     def fit(self, df_raw: pd.DataFrame) -> "CredNexaClusterer":
         """Fit KMeans clustering pipeline on raw DataFrame."""
         df_feat = add_features(df_raw)
-        
+
         preprocessor = build_column_transformer(
             numeric_cols=CLUSTER_FEATURES,
             categorical_cols=[]
@@ -50,22 +50,18 @@ class CredNexaClusterer:
         ])
 
         self.pipeline.fit(df_feat)
-        
-        # Name segments based on centroid characteristics
-        X_trans = self.pipeline.named_steps["pre"].transform(df_feat)
+
         centers = self.pipeline.named_steps["kmeans"].cluster_centers_
 
         for cid in range(self.n_clusters):
-            # Centroid summary (0: Log_ApplicantIncome, 1: Log_LoanAmount, 2: LoanToIncome, 3: EMI)
-            inc_z = centers[cid, 0]
-            loan_z = centers[cid, 1]
-            if inc_z > 0.3:
-                inc_desc = "High Income"
-            elif inc_z < -0.3:
-                inc_desc = "Lower Income"
+            # Centroid summary (0: Log_ApplicantIncome, 1: Log_CoapplicantIncome, 2: Log_LoanAmount)
+            coapp_z = centers[cid, 1]
+            if coapp_z > 0.0:
+                inc_desc = "Dual-Income Household"
             else:
-                inc_desc = "Moderate Income"
+                inc_desc = "Single Applicant Household"
 
+            loan_z = centers[cid, 2]
             if loan_z > 0.3:
                 burden_desc = "High Loan Size"
             else:
@@ -86,7 +82,7 @@ class CredNexaClusterer:
 
 
 def select_optimal_k_and_train(data_path: Path = RAW_DATA_PATH) -> dict:
-    """Evaluate silhouette scores for k=2..8 and train best KMeans model."""
+    """Evaluate silhouette scores and cluster sizes for k=2..8 and train best KMeans model."""
     df_raw = pd.read_csv(data_path)
     if "ApplicantIncome" in df_raw.columns:
         df_raw = df_raw[df_raw["ApplicantIncome"].fillna(0) >= 1000].copy()
@@ -98,17 +94,22 @@ def select_optimal_k_and_train(data_path: Path = RAW_DATA_PATH) -> dict:
     )
     X_trans = preprocessor.fit_transform(df_feat)
 
+    print(f"\n--- Clustering Evaluation (Features: {CLUSTER_FEATURES}) ---")
     silhouette_scores = {}
+    cluster_sizes = {}
     best_k = 2
     best_score = -1.0
 
-    print("\n--- Evaluating K-Means Silhouette Scores (k=2..8) ---")
     for k in range(2, 9):
         kmeans = KMeans(n_clusters=k, random_state=SEED, n_init=10)
         labels = kmeans.fit_predict(X_trans)
-        score = silhouette_score(X_trans, labels)
-        silhouette_scores[k] = float(score)
-        print(f"k={k}: Silhouette Score = {score:.4f}")
+        score = float(silhouette_score(X_trans, labels))
+        counts = {int(cls): int(cnt) for cls, cnt in pd.Series(labels).value_counts().items()}
+
+        silhouette_scores[k] = score
+        cluster_sizes[k] = counts
+
+        print(f"k={k:d}: Silhouette = {score:.4f} | Cluster Sizes = {counts}")
         if score > best_score:
             best_score = score
             best_k = k
@@ -124,7 +125,9 @@ def select_optimal_k_and_train(data_path: Path = RAW_DATA_PATH) -> dict:
     print(f"Saved clusterer to {CLUSTER_PATH}")
 
     return {
+        "features": CLUSTER_FEATURES,
         "silhouette_scores": silhouette_scores,
+        "cluster_sizes": cluster_sizes,
         "selected_k": best_k,
         "segment_names": clusterer.segment_names,
     }

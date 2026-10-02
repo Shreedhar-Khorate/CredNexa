@@ -1,5 +1,6 @@
 """Unit tests for predict contract and model robustness."""
 
+import json
 import sys
 from pathlib import Path
 
@@ -14,19 +15,15 @@ from ml.predict import ValidationError, predict
 
 
 @pytest.fixture
-def valid_payload():
-    return {
-        "ApplicantIncome": 5000,
-        "CoapplicantIncome": 1500,
-        "LoanAmount": 150,
-        "Loan_Amount_Term": 360,
-        "Credit_History": "1",
-        "Property_Area": "Semiurban",
-        "Married": "Yes",
-        "Education": "Graduate",
-        "Self_Employed": "No",
-        "Dependents": "0",
-    }
+def example_inputs():
+    fixture_path = BASE_DIR / "tests" / "fixtures" / "example_inputs.json"
+    with open(fixture_path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+@pytest.fixture
+def valid_payload(example_inputs):
+    return example_inputs["valid_applicant"]
 
 
 def test_missing_required_field():
@@ -57,6 +54,19 @@ def test_extreme_input_values(valid_payload):
     result = predict(payload)
     assert result["decision"] in ["Approved", "Rejected"]
     assert 0.0 <= result["probability"] <= 1.0
+
+
+def test_term_12_and_480(valid_payload):
+    """Test model handles term 12 and 480 months without crashing."""
+    payload_12 = valid_payload.copy()
+    payload_12["Loan_Amount_Term"] = 12
+    res_12 = predict(payload_12)
+    assert res_12["decision"] in ["Approved", "Rejected"]
+
+    payload_480 = valid_payload.copy()
+    payload_480["Loan_Amount_Term"] = 480
+    res_480 = predict(payload_480)
+    assert res_480["decision"] in ["Approved", "Rejected"]
 
 
 def test_credit_history_sign_sanity(valid_payload):

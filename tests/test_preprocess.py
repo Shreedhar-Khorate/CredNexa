@@ -11,6 +11,7 @@ if str(BASE_DIR) not in sys.path:
 import numpy as np
 import pandas as pd
 import pytest
+from sklearn.model_selection import train_test_split
 
 from ml.preprocess import (
     Clipper,
@@ -72,3 +73,27 @@ def test_credit_history_formatting():
     df_feat = add_features(df)
     results = df_feat["Credit_History"].tolist()
     assert results == ["1", "0", "Unknown", "Unknown"]
+
+
+def test_no_leakage_transformers():
+    """Verify that transformers are fit on training fold only."""
+    raw_path = BASE_DIR / "data" / "Loan_Data.csv"
+    if not raw_path.exists():
+        pytest.skip("data/Loan_Data.csv not found")
+
+    df = pd.read_csv(raw_path)
+    df = df[df["ApplicantIncome"].fillna(0) >= 1000].copy()
+    X = df.drop(columns=["Loan_Status"])
+    y = df["Loan_Status"]
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=42)
+
+    X_train_feat = add_features(X_train)
+    X_test_feat = add_features(X_test)
+
+    preprocessor = build_column_transformer()
+    X_train_trans = preprocessor.fit_transform(X_train_feat)
+    X_test_trans = preprocessor.transform(X_test_feat)
+
+    assert X_train_trans.shape[0] == len(X_train)
+    assert X_test_trans.shape[0] == len(X_test)
