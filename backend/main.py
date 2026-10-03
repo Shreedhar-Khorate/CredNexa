@@ -301,14 +301,52 @@ def get_admin_metrics():
 
 @app.get("/api/v1/admin/users", summary="List All Users (Admin)")
 def admin_list_users(admin: Dict[str, Any] = Depends(get_admin_user)):
-    """List registered users in database."""
-    return {"users": get_all_users_db()}
+    """List registered users from SQLite + Supabase profiles merged."""
+    from backend.supabase_client import get_supabase
+
+    sqlite_users = get_all_users_db()
+
+    # Enrich with Supabase profiles (has extra fields like is_active, avatar_url)
+    try:
+        client = get_supabase()
+        if client:
+            sup_res = client.table("profiles").select("*").order("created_at", desc=True).execute()
+            if sup_res.data:
+                # Merge: prefer Supabase data but include any SQLite-only users
+                sup_ids = {p["id"] for p in sup_res.data}
+                sqlite_only = [u for u in sqlite_users if u["id"] not in sup_ids]
+                merged = sup_res.data + sqlite_only
+                return {"users": merged, "source": "supabase+sqlite"}
+    except Exception as e:
+        logger.warning("Supabase user fetch failed, using SQLite: %s", e)
+
+    return {"users": sqlite_users, "source": "sqlite"}
 
 
 @app.get("/api/v1/admin/audit", summary="Get Audit Logs (Admin)")
-def admin_get_audit(admin: Dict[str, Any] = Depends(get_admin_user)):
-    """List system audit logs."""
-    return {"audit_logs": get_audit_logs_db()}
+def admin_get_audit(
+    limit: int = Query(200, ge=1, le=500),
+    admin: Dict[str, Any] = Depends(get_admin_user)
+):
+    """List system audit logs from Supabase (primary) with SQLite fallback."""
+    from backend.supabase_client import get_supabase
+
+    try:
+        client = get_supabase()
+        if client:
+            sup_res = (
+                client.table("audit_logs")
+                .select("*")
+                .order("created_at", desc=True)
+                .limit(limit)
+                .execute()
+            )
+            if sup_res.data is not None:
+                return {"audit_logs": sup_res.data, "source": "supabase"}
+    except Exception as e:
+        logger.warning("Supabase audit fetch failed, using SQLite: %s", e)
+
+    return {"audit_logs": get_audit_logs_db(limit=limit), "source": "sqlite"}
 
 
 @app.post("/api/v1/llm/explain", summary="Generate AI Explanation from Assessment Object")
