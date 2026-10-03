@@ -1,31 +1,403 @@
 @import "tailwindcss";
+@import "./App.css";
+
+/* ==============================================================================
+   CredNexa Design System — Phase 1 Base Tokens & Foundations
+   ============================================================================== */
+
+:root {
+  --cn-canvas: #060911;
+  --cn-surface: #0d1424;
+  --cn-surface-elevated: #131d33;
+  --cn-surface-muted: #1e293b;
+  --cn-border: #1e293b;
+  --cn-border-muted: #334155;
+  --cn-primary: #0ea5e9;
+  --cn-primary-hover: #38bdf8;
+  --cn-accent: #38bdf8;
+  --cn-accent-secondary: #818cf8;
+  --cn-ai: #6366f1;
+  --cn-ai-hover: #818cf8;
+  --cn-success: #10b981;
+  --cn-danger: #f43f5e;
+  --cn-warning: #f59e0b;
+  --cn-text-main: #f8fafc;
+  --cn-text-secondary: #cbd5e1;
+  --cn-text-muted: #94a3b8;
+  --cn-text-subtle: #64748b;
+  --cn-shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.45), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+  --cn-shadow-elevated: 0 20px 30px -10px rgba(0, 0, 0, 0.6);
+  --cn-nav-bg: rgba(13, 20, 36, 0.92);
+  --cn-modal-overlay: rgba(6, 9, 17, 0.82);
+  --cn-input-bg: rgba(13, 20, 36, 0.9);
+  --cn-brand-cred: #f8fafc;
+  --cn-brand-nexa: #38bdf8;
+}
+
+[data-theme="light"] {
+  --cn-canvas: #f7f9fc;
+  --cn-surface: #ffffff;
+  --cn-surface-elevated: #f1f5f9;
+  --cn-surface-muted: #e2e8f0;
+  --cn-border: #e2e8f0;
+  --cn-border-muted: #cbd5e1;
+  --cn-primary: #0284c7;
+  --cn-primary-hover: #0369a1;
+  --cn-accent: #0284c7;
+  --cn-accent-secondary: #6366f1;
+  --cn-ai: #4f46e5;
+  --cn-ai-hover: #4338ca;
+  --cn-success: #10b981;
+  --cn-danger: #f43f5e;
+  --cn-warning: #f59e0b;
+  --cn-text-main: #0f172a;
+  --cn-text-secondary: #475569;
+  --cn-text-muted: #64748b;
+  --cn-text-subtle: #94a3b8;
+  --cn-shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+  --cn-shadow-elevated: 0 12px 24px -4px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+  --cn-nav-bg: rgba(255, 255, 255, 0.94);
+  --cn-modal-overlay: rgba(15, 23, 42, 0.6);
+  --cn-input-bg: #ffffff;
+  --cn-brand-cred: #0f172a;
+  --cn-brand-nexa: #0284c7;
+}
 
 @layer base {
   body {
-    @apply bg-slate-950 text-slate-100 antialiased font-sans min-h-screen selection:bg-sky-500 selection:text-white;
+    background-color: var(--cn-canvas);
+    color: var(--cn-text-main);
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  ::selection {
+    background-color: var(--cn-primary);
+    color: #ffffff;
   }
 }
 
-.glass-panel {
-  @apply bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-2xl shadow-xl;
-}
-
-.glass-button {
-  @apply transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
-}
-
-/* Custom scrollbar */
+/* ── Custom Scrollbar ── */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
 }
 ::-webkit-scrollbar-track {
-  background: #090d16;
+  background: var(--cn-canvas);
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: var(--cn-border);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: var(--cn-border-muted);
+}
+
+/* ── Card System ── */
+.cn-card {
+  background-color: var(--cn-surface);
+  border: 1px solid var(--cn-border);
+  border-radius: 1rem;
+  box-shadow: var(--cn-shadow-card);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cn-card-elevated {
+  background-color: var(--cn-surface-elevated);
+  border: 1px solid var(--cn-border-muted);
+  border-radius: 1rem;
+  box-shadow: var(--cn-shadow-elevated);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cn-card-hover:hover {
+  border-color: rgba(56, 189, 248, 0.3);
+  box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.25), 0 0 12px 1px rgba(14, 165, 233, 0.08);
+  transform: translateY(-1px);
+}
+
+/* Backwards-compatible glass panel */
+.glass-panel {
+  background-color: var(--cn-nav-bg);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--cn-border);
+  border-radius: 1rem;
+  box-shadow: var(--cn-shadow-card);
+}
+
+/* ── Button System ── */
+.cn-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  padding: 0.55rem 1.15rem;
+  border-radius: 0.75rem;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+  cursor: pointer;
+}
+
+.cn-btn:active {
+  transform: scale(0.98);
+}
+
+.cn-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.cn-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--cn-canvas), 0 0 0 4px var(--cn-primary);
+}
+
+.cn-btn-primary {
+  background-color: var(--cn-primary);
+  color: #060911;
+  box-shadow: 0 4px 14px 0 rgba(14, 165, 233, 0.28);
+}
+
+.cn-btn-primary:hover {
+  background-color: var(--cn-primary-hover);
+  box-shadow: 0 6px 18px 0 rgba(14, 165, 233, 0.38);
+}
+
+.cn-btn-secondary {
+  background-color: var(--cn-surface-muted);
+  color: var(--cn-text-main);
+  border: 1px solid var(--cn-border);
+}
+
+.cn-btn-secondary:hover {
+  background-color: var(--cn-surface-elevated);
+  border-color: var(--cn-border-muted);
+}
+
+.cn-btn-danger {
+  background-color: var(--cn-danger);
+  color: #ffffff;
+  box-shadow: 0 4px 14px 0 rgba(244, 63, 94, 0.28);
+}
+
+.cn-btn-danger:hover {
+  background-color: #fb7185;
+  box-shadow: 0 6px 18px 0 rgba(244, 63, 94, 0.38);
+}
+
+.cn-btn-success {
+  background-color: var(--cn-success);
+  color: #060911;
+  box-shadow: 0 4px 14px 0 rgba(16, 185, 129, 0.28);
+}
+
+.cn-btn-success:hover {
+  background-color: #34d399;
+  box-shadow: 0 6px 18px 0 rgba(16, 185, 129, 0.38);
+}
+
+.cn-btn-ai {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.28);
+}
+
+.cn-btn-ai:hover {
+  background: linear-gradient(135deg, #6366f1 0%, #9333ea 100%);
+  box-shadow: 0 6px 18px 0 rgba(99, 102, 241, 0.38);
+}
+
+.cn-btn-cta {
+  background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px 0 rgba(14, 165, 233, 0.35);
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cn-btn-cta:hover {
+  background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+  box-shadow: 0 6px 20px 0 rgba(14, 165, 233, 0.45);
+  transform: translateY(-1px);
+}
+
+.cn-btn-cta:active {
+  transform: scale(0.98);
+}
+
+/* Backwards-compatible glass button */
+.glass-button {
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.glass-button:active {
+  transform: scale(0.98);
+}
+.glass-button:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* ── Form Controls System ── */
+.cn-input,
+.cn-select {
+  width: 100%;
+  background-color: var(--cn-input-bg);
+  border: 1px solid var(--cn-border);
+  border-radius: 0.75rem;
+  padding: 0.55rem 0.875rem;
+  font-size: 0.875rem;
+  color: var(--cn-text-main);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.2s ease, color 0.2s ease;
+  outline: none;
+}
+
+.cn-input::placeholder {
+  color: var(--cn-text-subtle);
+}
+
+.cn-input:focus,
+.cn-select:focus {
+  border-color: var(--cn-primary);
+  box-shadow: 0 0 0 1px var(--cn-primary), 0 0 8px 1px rgba(14, 165, 233, 0.18);
+}
+
+.cn-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--cn-text-muted);
+  margin-bottom: 0.35rem;
+  letter-spacing: 0.015em;
+}
+
+.cn-helper {
+  font-size: 0.6875rem;
+  color: var(--cn-text-subtle);
+  margin-top: 0.25rem;
+  display: block;
+}
+
+/* ── Status Badges System ── */
+.cn-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border-width: 1px;
+  border-style: solid;
+  line-height: 1;
+}
+
+.cn-badge-approved {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.cn-badge-rejected {
+  background-color: rgba(244, 63, 94, 0.1);
+  color: #fb7185;
+  border-color: rgba(244, 63, 94, 0.3);
+}
+
+.cn-badge-pending {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.cn-badge-reviewed {
+  background-color: rgba(99, 102, 241, 0.1);
+  color: #a5b4fc;
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.cn-badge-deferred {
+  background-color: rgba(245, 158, 11, 0.12);
+  color: #fcd34d;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.cn-badge-admin {
+  background-color: rgba(99, 102, 241, 0.12);
+  color: #818cf8;
+  border-color: rgba(99, 102, 241, 0.35);
+}
+
+/* ── Typography & Headings ── */
+.cn-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cn-primary);
+  margin-bottom: 0.35rem;
+}
+
+.cn-brand-cred {
+  color: var(--cn-brand-cred);
+}
+
+.cn-brand-nexa {
+  color: var(--cn-brand-nexa);
+}
+
+.cn-heading-page {
+  font-size: 1.875rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: var(--cn-text-main);
+  line-height: 1.2;
+}
+
+@media (min-width: 640px) {
+  .cn-heading-page {
+    font-size: 2.25rem;
+  }
+}
+
+.cn-heading-section {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--cn-text-main);
+}
+
+.cn-metric-val {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: var(--cn-text-main);
+}
+
+.cn-text-muted {
+  font-size: 0.75rem;
+  color: var(--cn-text-muted);
+  line-height: 1.45;
+}
+
+/* ── Modal & Overlay ── */
+.cn-modal-backdrop {
+  background-color: var(--cn-modal-overlay);
+  backdrop-filter: blur(8px);
+}
+
+.cn-modal-content {
+  background-color: var(--cn-surface);
+  border: 1px solid var(--cn-border);
+  box-shadow: var(--cn-shadow-elevated);
 }
