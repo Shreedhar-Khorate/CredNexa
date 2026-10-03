@@ -7,7 +7,12 @@ import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, List, Optional
-from backend.supabase_client import save_application_supabase, get_applications_supabase
+from backend.supabase_client import (
+    save_application_supabase,
+    get_applications_supabase,
+    sync_user_to_supabase,
+    save_audit_log_supabase,
+)
 
 logger = logging.getLogger("crednexa_db")
 DB_PATH = Path(__file__).resolve().parent / "crednexa.db"
@@ -108,7 +113,7 @@ def init_db():
     conn.close()
 
 # Operations for Applications
-def save_application_db(app_data: Dict[str, Any], user_id: str) -> Dict[str, Any]:
+def save_application_db(app_data: Dict[str, Any], user_id: str, calling_user: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     conn = get_db()
     cursor = conn.cursor()
     now = datetime.now(timezone.utc).isoformat()
@@ -119,55 +124,66 @@ def save_application_db(app_data: Dict[str, Any], user_id: str) -> Dict[str, Any
     if not app_data.get("created_at"):
         app_data["created_at"] = now
 
-    # 1. Save to SQLite DB
-    cursor.execute("""
-    INSERT INTO applications (
-        id, user_id, applicant_name, ApplicantIncome, CoapplicantIncome, LoanAmount, Loan_Amount_Term,
-        Credit_History, Property_Area, Married, Education, Self_Employed, Dependents,
-        decision, probability, threshold, segment, top_factors, suggestions, llm_explanation, model_version, status, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
-        app_id,
-        user_id,
-        app_data.get("applicant_name", "Applicant"),
-        float(app_data.get("ApplicantIncome", 0)),
-        float(app_data.get("CoapplicantIncome", 0)),
-        float(app_data.get("LoanAmount", 0)),
-        float(app_data.get("Loan_Amount_Term", 360)),
-        str(app_data.get("Credit_History", "1")),
-        str(app_data.get("Property_Area", "Semiurban")),
-        str(app_data.get("Married", "Yes")),
-        str(app_data.get("Education", "Graduate")),
-        str(app_data.get("Self_Employed", "No")),
-        str(app_data.get("Dependents", "0")),
-        app_data.get("decision", "Rejected"),
-        float(app_data.get("probability", 0.0)),
-        float(app_data.get("threshold", 0.4145)),
-        json.dumps(app_data.get("segment", {})),
-        json.dumps(app_data.get("top_factors", [])),
-        json.dumps(app_data.get("suggestions", [])),
-        json.dumps(app_data.get("llm_explanation")),
-        app_data.get("model_version", "v1"),
-        app_data.get("status", "pending"),
-        app_data["created_at"]
-    ))
-    
-    # Audit log entry
-    cursor.execute(
-        "INSERT INTO audit_logs (user_id, action, details, created_at) VALUES (?, ?, ?, ?)",
-        (user_id, "APPLICATION_CREATED", f"Created application {app_id} for {app_data.get('applicant_name')}", now)
-    )
-    
-    conn.commit()
-    conn.close()
-
-    # 2. Sync to Supabase Cloud DB via API key
+    # 1. Save to SQLite (local fallback)
     try:
-        sup_saved = save_application_supabase(app_data, user_id)
+        cursor.execute("""
+        INSERT OR REPLACE INTO applications (
+            id, user_id, applicant_name, ApplicantIncome, CoapplicantIncome, LoanAmount, Loan_Amount_Term,
+            Credit_History, Property_Area, Married, Education, Self_Employed, Dependents,
+            decision, probability, threshold, segment, top_factors, suggestions, llm_explanation, model_version, status, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            app_id,
+            user_id,
+            app_data.get("applicant_name", "Applicant"),
+            float(app_data.get("ApplicantIncome", 0)),
+            float(app_data.get("CoapplicantIncome", 0)),
+            float(app_data.get("LoanAmount", 0)),
+            float(app_data.get("Loan_Amount_Term", 360)),
+            str(app_data.get("Credit_History", "1")),
+            str(app_data.get("Property_Area", "Semiurban")),
+            str(app_data.get("Married", "Yes")),
+            str(app_data.get("Education", "Graduate")),
+            str(app_data.get("Self_Employed", "No")),
+            str(app_data.get("Dependents", "0")),
+            app_data.get("decision", "Rejected"),
+            float(app_data.get("probability", 0.0)),
+            float(app_data.get("threshold", 0.4145)),
+            json.dumps(app_data.get("segment", {})),
+            json.dumps(app_data.get("top_factors", [])),
+            json.dumps(app_data.get("suggestions", [])),
+            json.dumps(app_data.get("llm_explanation")),
+            app_data.get("model_version", "v1"),
+            app_data.get("status", "pending"),
+            app_data["created_at"]
+        ))
+        cursor.execute(
+            "INSERT INTO audit_logs (user_id, action, details, created_at) VALUES (?, ?, ?, ?)",
+            (user_id, "APPLICATION_CREATED", f"Application {app_id} for {app_data.get('applicant_name')}", now)
+        )
+        conn.commit()
+    except Exception as sqlite_err:
+        logger.warning("SQLite save warning: %s", sqlite_err)
+    finally:
+        conn.close()
+
+    # 2. Sync to Supabase Cloud DB (primary storage)
+    try:
+        sup_saved = save_application_supabase(app_data, user_id=user_id, user=calling_user)
         if sup_saved:
-            logger.info("Successfully synced application %s to Supabase Database", app_id)
-    except Exception as e:
-        logger.warning("Supabase sync warning: %s", e)
+            logger.info("✅ Application %s synced to Supabase", app_id)
+            # Mirror audit log to Supabase
+            save_audit_log_supabase(
+                actor=calling_user,
+                action="APPLICATION_CREATED",
+                resource_type="application",
+                resource_id=app_id,
+                after_state={"decision": app_data.get("decision"), "probability": app_data.get("probability")},
+            )
+        else:
+            logger.warning("⚠️  Supabase sync failed — data saved to SQLite only")
+    except Exception as sup_err:
+        logger.warning("Supabase sync error: %s", sup_err)
 
     return app_data
 
@@ -233,22 +249,29 @@ def create_user_db(full_name: str, email: str, password: str, role: str = "user"
         "INSERT INTO users (id, email, full_name, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?, ?)",
         (user_id, email.lower().strip(), full_name, pwd_hash, role, now)
     )
-    
     cursor.execute(
         "INSERT INTO audit_logs (user_id, action, details, created_at) VALUES (?, ?, ?, ?)",
         (user_id, "USER_REGISTERED", f"Registered user {email}", now)
     )
-    
     conn.commit()
     conn.close()
     
-    return {
+    user = {
         "id": user_id,
         "email": email.lower().strip(),
         "full_name": full_name,
         "role": role,
         "created_at": now
     }
+
+    # Sync to Supabase profiles so applications can be linked
+    try:
+        sync_user_to_supabase(user)
+        save_audit_log_supabase(actor=user, action="USER_REGISTERED", resource_type="user", resource_id=user_id)
+    except Exception as sup_err:
+        logger.warning("Supabase user sync (register) failed: %s", sup_err)
+
+    return user
 
 def authenticate_user_db(email: str, password: str) -> Optional[Dict[str, Any]]:
     conn = get_db()
@@ -267,6 +290,14 @@ def authenticate_user_db(email: str, password: str) -> Optional[Dict[str, Any]]:
         )
         conn.commit()
         conn.close()
+
+        # Sync to Supabase profiles on every login (keeps data current)
+        try:
+            sync_user_to_supabase(user)
+            save_audit_log_supabase(actor=user, action="USER_LOGIN", resource_type="user", resource_id=user["id"])
+        except Exception as sup_err:
+            logger.warning("Supabase user sync (login) failed: %s", sup_err)
+
         return user
     
     conn.close()

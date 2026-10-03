@@ -44,6 +44,7 @@ from backend.db import (
     get_all_users_db,
     get_audit_logs_db,
 )
+
 from backend.auth import (
     create_access_token,
     get_current_user,
@@ -236,10 +237,10 @@ def predict_loan_eligibility(
             logger.warning("Failed to generate LLM explanation on predict: %s", llm_err)
             record["llm_explanation"] = None
 
-        # Persist permanently into SQLite Database
-        save_application_db(record, user_id=user_id)
+        # Persist to SQLite + Supabase Cloud DB (Supabase is primary)
+        save_application_db(record, user_id=user_id, calling_user=current_user)
 
-        logger.info(f"Application {app_id} evaluated & saved to DB: decision={res['decision']}, prob={res['probability']:.4f}")
+        logger.info(f"Application {app_id} saved — decision={res['decision']}, prob={res['probability']:.4f}")
         return record
 
     except ValidationError as ve:
@@ -253,15 +254,13 @@ def list_applications(
     limit: int = Query(50, ge=1, le=200),
     authorization: Optional[str] = Header(None)
 ):
-    """Retrieve history of submitted applications from SQLite database."""
+    """Retrieve applications from Supabase (primary) with SQLite fallback."""
     current_user = get_current_user_optional(authorization)
-    
-    # If admin, retrieve all applications; if user, retrieve own applications; if guest, retrieve all limit
+    # get_applications_db already tries Supabase first, then falls back to SQLite
     if current_user and current_user.get("role") != "admin":
         apps = get_applications_db(user_id=current_user["id"], limit=limit)
     else:
         apps = get_applications_db(user_id=None, limit=limit)
-        
     return {
         "total": len(apps),
         "applications": apps,
