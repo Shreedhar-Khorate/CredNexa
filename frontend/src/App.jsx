@@ -238,6 +238,8 @@ export default function App() {
             <HistoryTable
               applications={history}
               onSelect={(row) => { setResult(row); setActiveTab('assess'); }}
+              isAdmin={isAdmin}
+              onReload={reloadHistory}
             />
           </div>
         )}
@@ -272,7 +274,7 @@ export default function App() {
                 Model monitoring, user management, audit trail, and system analytics.
               </p>
             </div>
-            <AdminDashboard user={user} />
+            <AdminDashboard user={user} onRefreshParent={reloadHistory} />
           </div>
         )}
 

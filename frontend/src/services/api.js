@@ -143,12 +143,22 @@ export const fetchAiExplanation = async (assessmentPayload) => {
       })) : [],
       segment_explanation: `Assigned to segment: ${assessmentPayload.segment?.name || 'Standard Segment'}.`,
       suggestions_explanation: 'Consider updating credit profile or adjusting requested loan size for better odds.',
-      limitations: [
-        'Prediction is derived from project historical training data.',
-        'This is a decision-support demonstration tool.'
-      ],
       disclaimer: 'Educational decision support. Not for binding bank lending decisions.',
       engine_used: 'Standalone AI Simulation'
     };
   }
 };
+
+export const reviewApplication = async (applicationId, finalDecision, reviewNote = '') => {
+  try {
+    const res = await apiClient.post(`/admin/applications/${applicationId}/review`, {
+      final_decision: finalDecision,
+      review_note: reviewNote,
+    });
+    return res.data;
+  } catch (err) {
+    console.error('Failed to submit application review:', err);
+    throw err;
+  }
+};
+

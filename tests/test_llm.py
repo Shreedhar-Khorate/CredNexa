@@ -73,3 +73,39 @@ def test_api_explain_endpoint():
     assert data["status"] == "success"
     assert "explanation" in data
     assert "summary" in data["explanation"]
+
+
+def test_explanation_db_persistence():
+    """Verify save_explanation_db writes to explanations table and updates applications cache."""
+    from backend.db import init_db, save_explanation_db, get_db
+    init_db()
+
+    app_id = "test-explanation-app-001"
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT OR REPLACE INTO applications (
+            id, user_id, applicant_name, ApplicantIncome, CoapplicantIncome, LoanAmount, Loan_Amount_Term,
+            Credit_History, Property_Area, Married, Education, Self_Employed, Dependents,
+            decision, probability, threshold, status, model_version, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (app_id, "user_id_1", "Test Applicant Exp", 5000, 0, 150, 360, "1", "Urban", "Yes", "Graduate", "No", "0", "Approved", 0.85, 0.4145, "pending", "v1", "2026-10-03T10:00:00Z"))
+    conn.commit()
+    conn.close()
+
+    exp_payload = {"summary": "Test explanation summary", "engine_used": "Google Gemini (gemini-1.5-flash) - Primary"}
+    save_explanation_db(app_id, exp_payload, "Google Gemini")
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM explanations WHERE application_id = ?", (app_id,))
+    exp_row = cursor.fetchone()
+    assert exp_row is not None
+    assert exp_row["llm_provider"] == "Google Gemini"
+
+    cursor.execute("SELECT llm_explanation FROM applications WHERE id = ?", (app_id,))
+    app_row = cursor.fetchone()
+    assert app_row["llm_explanation"] is not None
+    assert "Test explanation summary" in app_row["llm_explanation"]
+    conn.close()
+

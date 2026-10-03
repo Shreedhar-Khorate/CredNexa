@@ -181,6 +181,7 @@ def get_applications_supabase(
             record = dict(item)
             # Normalise to camelCase/original keys expected by the frontend
             record["id"] = str(record.get("id", ""))
+            record["applicant_name"] = record.get("applicant_name", "Applicant")
             record["ApplicantIncome"] = float(record.get("applicant_income", 0))
             record["CoapplicantIncome"] = float(record.get("coapplicant_income", 0))
             record["LoanAmount"] = float(record.get("loan_amount", 0))
@@ -194,6 +195,11 @@ def get_applications_supabase(
             record["decision"] = record.get("predicted_decision", "Rejected")
             record["probability"] = float(record.get("predicted_prob", 0.0))
             record["threshold"] = float(record.get("decision_threshold", 0.414522))
+            record["status"] = record.get("status", "pending")
+            record["top_factors"] = record.get("top_factors", [])
+            record["suggestions"] = record.get("suggestions", [])
+            record["llm_explanation"] = record.get("llm_explanation")
+            record["created_at"] = record.get("created_at")
             record["segment"] = {
                 "id": record.get("segment_cluster_id", 0),
                 "name": record.get("segment_label", "Standard Risk Profile"),

@@ -81,3 +81,15 @@ def test_credit_history_sign_sanity(valid_payload):
 
     assert good_res["probability"] > bad_res["probability"]
     assert (good_res["probability"] - bad_res["probability"]) >= 0.20
+
+
+def test_predict_clustering(valid_payload):
+    """Test that predict returns active cluster segment info."""
+    result = predict(valid_payload)
+    assert "segment" in result
+    assert "id" in result["segment"]
+    assert "name" in result["segment"]
+    assert isinstance(result["segment"]["id"], int)
+    assert len(result["segment"]["name"]) > 0
+    assert result["segment"]["name"] != "Standard Profile"  # Confirms trained clusterer artifact is loaded & used
+

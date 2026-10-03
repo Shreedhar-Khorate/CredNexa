@@ -83,9 +83,11 @@ def load_artifacts():
     clusterer = None
     if CLUSTER_PATH.exists():
         try:
+            from ml.cluster import CredNexaClusterer  # Ensures class definition is available for unpickling
             clusterer = joblib.load(CLUSTER_PATH)
-        except Exception:
-            pass
+        except Exception as exc:
+            import logging
+            logging.getLogger("crednexa_ml").warning("Failed to load clusterer artifact: %s", exc)
 
     threshold = DEFAULT_THRESHOLD
     if METRICS_PATH.exists():

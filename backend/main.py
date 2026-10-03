@@ -43,6 +43,11 @@ from backend.db import (
     get_user_by_id_db,
     get_all_users_db,
     get_audit_logs_db,
+    save_review_db,
+    save_explanation_db,
+    update_user_role_db,
+    set_user_active_db,
+    log_model_deployment_db,
 )
 
 from backend.auth import (
@@ -134,6 +139,24 @@ class PredictionResponse(BaseModel):
     llm_explanation: Optional[Dict[str, Any]] = None
     model_version: str
     created_at: str
+
+
+class ApplicationReviewRequest(BaseModel):
+    final_decision: str = Field(..., description="Review decision: 'approved', 'rejected', or 'deferred'")
+    review_note: Optional[str] = Field(None, description="Optional admin review notes")
+
+
+class UserRoleUpdateRequest(BaseModel):
+    role: str = Field(..., description="Role: 'user' or 'admin'")
+
+
+class UserActiveUpdateRequest(BaseModel):
+    is_active: bool = Field(..., description="Active status")
+
+
+class ModelDeployRequest(BaseModel):
+    model_version: str = Field(..., description="Model version tag e.g. 'v1.0'")
+    notes: Optional[str] = Field(None, description="Optional release notes")
 
 
 # --- Endpoints ---
@@ -239,6 +262,17 @@ def predict_loan_eligibility(
 
         # Persist to SQLite + Supabase Cloud DB (Supabase is primary)
         save_application_db(record, user_id=user_id, calling_user=current_user)
+
+        # Persist to explanations table as source of truth
+        if record.get("llm_explanation"):
+            try:
+                save_explanation_db(
+                    application_id=app_id,
+                    explanation_data=record["llm_explanation"],
+                    llm_provider=record["llm_explanation"].get("engine_used")
+                )
+            except Exception as exp_save_err:
+                logger.warning("Failed to persist explanation to explanations table: %s", exp_save_err)
 
         logger.info(f"Application {app_id} saved — decision={res['decision']}, prob={res['probability']:.4f}")
         return record
@@ -349,6 +383,70 @@ def admin_get_audit(
     return {"audit_logs": get_audit_logs_db(limit=limit), "source": "sqlite"}
 
 
+@app.post("/api/v1/admin/applications/{application_id}/review", summary="Review Loan Application (Admin)")
+def review_application(
+    application_id: str,
+    payload: ApplicationReviewRequest,
+    admin: Dict[str, Any] = Depends(get_admin_user)
+):
+    """
+    Process administrative review of a pending loan application.
+    Maps final_decision 'deferred' -> applications.status 'reviewed' due to schema CHECK constraint.
+    """
+    decision_clean = payload.final_decision.lower().strip()
+    if decision_clean not in ["approved", "rejected", "deferred"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="final_decision must be one of: 'approved', 'rejected', 'deferred'"
+        )
+
+    review_result = save_review_db(
+        application_id=application_id,
+        admin_user=admin,
+        final_decision=decision_clean,
+        review_note=payload.review_note
+    )
+    return {
+        "status": "success",
+        "review": review_result
+    }
+
+
+@app.put("/api/v1/admin/users/{target_user_id}/role", summary="Update User Role (Admin)")
+def admin_update_user_role(
+    target_user_id: str,
+    payload: UserRoleUpdateRequest,
+    admin: Dict[str, Any] = Depends(get_admin_user)
+):
+    """Update user role and log USER_ROLE_CHANGED audit event."""
+    try:
+        res = update_user_role_db(target_user_id=target_user_id, new_role=payload.role.lower().strip(), admin_user=admin)
+        return {"status": "success", "user": res}
+    except ValueError as ve:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+
+
+@app.put("/api/v1/admin/users/{target_user_id}/active", summary="Toggle User Active Status (Admin)")
+def admin_toggle_user_active(
+    target_user_id: str,
+    payload: UserActiveUpdateRequest,
+    admin: Dict[str, Any] = Depends(get_admin_user)
+):
+    """Activate or deactivate user account and log USER_ACTIVATED / USER_DEACTIVATED audit event."""
+    res = set_user_active_db(target_user_id=target_user_id, is_active=payload.is_active, admin_user=admin)
+    return {"status": "success", "user": res}
+
+
+@app.post("/api/v1/admin/model/deploy", summary="Record Model Deployment (Admin)")
+def admin_deploy_model(
+    payload: ModelDeployRequest,
+    admin: Dict[str, Any] = Depends(get_admin_user)
+):
+    """Log MODEL_DEPLOYED audit event upon activating a new ML model version."""
+    res = log_model_deployment_db(model_version=payload.model_version, admin_user=admin, notes=payload.notes)
+    return {"status": "success", "deployment": res}
+
+
 @app.post("/api/v1/llm/explain", summary="Generate AI Explanation from Assessment Object")
 def explain_assessment_payload(payload: Dict[str, Any]):
     """Generate structured AI explanation for an assessment object."""
@@ -364,12 +462,17 @@ def explain_assessment_payload(payload: Dict[str, Any]):
 
 @app.post("/api/v1/llm/explain/{application_id}", summary="Generate AI Explanation by Application UUID")
 def explain_application_by_id(application_id: str):
-    """Retrieve saved application from DB by ID and generate AI explanation."""
+    """Retrieve saved application from DB by ID, generate AI explanation, and persist to explanations table."""
     target_record = get_application_by_id_db(application_id)
     if not target_record:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application record not found")
         
     explanation = explain_assessment(target_record)
+    save_explanation_db(
+        application_id=application_id,
+        explanation_data=explanation,
+        llm_provider=explanation.get("engine_used")
+    )
     return {
         "status": "success",
         "application_id": application_id,

@@ -12,6 +12,7 @@ from backend.supabase_client import (
     get_applications_supabase,
     sync_user_to_supabase,
     save_audit_log_supabase,
+    get_supabase,
 )
 
 logger = logging.getLogger("crednexa_db")
@@ -81,6 +82,20 @@ def init_db():
         action TEXT NOT NULL,
         details TEXT,
         created_at TEXT NOT NULL
+    )
+    """)
+    
+    # Create Reviews table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS reviews (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        application_id TEXT NOT NULL,
+        admin_id TEXT NOT NULL,
+        final_decision TEXT NOT NULL,
+        review_note TEXT,
+        reviewed_at TEXT NOT NULL,
+        FOREIGN KEY (application_id) REFERENCES applications(id),
+        FOREIGN KEY (admin_id) REFERENCES users(id)
     )
     """)
     
@@ -326,3 +341,245 @@ def get_audit_logs_db(limit: int = 100) -> List[Dict[str, Any]]:
     rows = cursor.fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+def save_review_db(application_id: str, admin_user: Dict[str, Any], final_decision: str, review_note: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Save admin review decision and update application status.
+    Maps final_decision 'deferred' -> applications.status 'reviewed' due to schema CHECK constraint.
+    """
+    # Explicit status mapping between reviews.final_decision enum and applications.status CHECK constraint:
+    # reviews.final_decision: 'approved' | 'rejected' | 'deferred'
+    # applications.status:    'pending'  | 'reviewed' | 'approved' | 'rejected'
+    status_mapping = {
+        "approved": "approved",
+        "rejected": "rejected",
+        "deferred": "reviewed",  # 'deferred' maps to 'reviewed' status in applications table
+    }
+    target_status = status_mapping.get(final_decision.lower(), "reviewed")
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    now = datetime.now(timezone.utc).isoformat()
+    admin_id = admin_user["id"]
+
+    # 1. Save to SQLite (local fallback)
+    try:
+        cursor.execute(
+            "INSERT INTO reviews (application_id, admin_id, final_decision, review_note, reviewed_at) VALUES (?, ?, ?, ?, ?)",
+            (application_id, admin_id, final_decision, review_note, now)
+        )
+        cursor.execute(
+            "UPDATE applications SET status = ? WHERE id = ?",
+            (target_status, application_id)
+        )
+        cursor.execute(
+            "INSERT INTO audit_logs (user_id, action, details, created_at) VALUES (?, ?, ?, ?)",
+            (admin_id, "APPLICATION_REVIEWED", f"Application {application_id} updated to status '{target_status}' (decision: '{final_decision}')", now)
+        )
+        conn.commit()
+    except Exception as sqlite_err:
+        logger.warning("SQLite review save warning: %s", sqlite_err)
+    finally:
+        conn.close()
+
+    # 2. Sync to Supabase Cloud DB
+    try:
+        client = get_supabase()
+        if client:
+            app_id_val = int(application_id) if str(application_id).isdigit() else None
+            if app_id_val is not None:
+                client.table("reviews").insert({
+                    "application_id": app_id_val,
+                    "admin_id": admin_id,
+                    "final_decision": final_decision,
+                    "review_note": review_note,
+                }).execute()
+                
+                client.table("applications").update({
+                    "status": target_status,
+                }).eq("id", app_id_val).execute()
+
+            save_audit_log_supabase(
+                actor=admin_user,
+                action="APPLICATION_REVIEWED",
+                resource_type="application",
+                resource_id=application_id,
+                after_state={"status": target_status, "final_decision": final_decision, "note": review_note}
+            )
+    except Exception as sup_err:
+        logger.warning("Supabase review sync error: %s", sup_err)
+
+    return {
+        "application_id": application_id,
+        "admin_id": admin_id,
+        "final_decision": final_decision,
+        "status": target_status,
+        "review_note": review_note,
+        "reviewed_at": now
+    }
+
+
+def save_explanation_db(
+    application_id: str,
+    explanation_data: Dict[str, Any],
+    llm_provider: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Persist structured LLM explanation to explanations table (primary source of truth)
+    and sync to denormalized applications.llm_explanation column cache.
+    """
+    provider = llm_provider or explanation_data.get("engine_used", "Gemini")
+    explanation_str = json.dumps(explanation_data) if isinstance(explanation_data, dict) else str(explanation_data)
+    now = datetime.now(timezone.utc).isoformat()
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # 1. Save in SQLite explanations table
+    try:
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS explanations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            application_id TEXT NOT NULL,
+            explanation_text TEXT NOT NULL,
+            llm_provider TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (application_id) REFERENCES applications(id)
+        )
+        """)
+        cursor.execute(
+            "INSERT INTO explanations (application_id, explanation_text, llm_provider, created_at) VALUES (?, ?, ?, ?)",
+            (application_id, explanation_str, provider, now)
+        )
+        cursor.execute(
+            "UPDATE applications SET llm_explanation = ? WHERE id = ?",
+            (explanation_str, application_id)
+        )
+        conn.commit()
+    except Exception as sqlite_err:
+        logger.warning("SQLite explanation save warning: %s", sqlite_err)
+    finally:
+        conn.close()
+
+    # 2. Sync to Supabase explanations table & applications cache
+    try:
+        client = get_supabase()
+        if client:
+            app_id_int = int(application_id) if str(application_id).isdigit() else None
+            exp_payload = {
+                "assessment_id": str(application_id),
+                "explanation_text": explanation_str,
+                "llm_provider": provider,
+            }
+            if app_id_int is not None:
+                exp_payload["application_id"] = app_id_int
+
+            client.table("explanations").insert(exp_payload).execute()
+            
+            # Sync denormalized cache in applications table
+            if app_id_int is not None:
+                client.table("applications").update({"llm_explanation": explanation_data}).eq("id", app_id_int).execute()
+    except Exception as sup_err:
+        logger.warning("Supabase explanation sync error (non-critical): %s", sup_err)
+
+    return explanation_data
+
+
+def update_user_role_db(target_user_id: str, new_role: str, admin_user: Dict[str, Any]) -> Dict[str, Any]:
+    """Update user role (user/admin) and record audit log."""
+    if new_role not in ["user", "admin"]:
+        raise ValueError("Role must be 'user' or 'admin'")
+
+    conn = get_db()
+    cursor = conn.cursor()
+    now = datetime.now(timezone.utc).isoformat()
+    admin_id = admin_user["id"]
+
+    cursor.execute("UPDATE users SET role = ? WHERE id = ?", (new_role, target_user_id))
+    cursor.execute(
+        "INSERT INTO audit_logs (user_id, action, details, created_at) VALUES (?, ?, ?, ?)",
+        (admin_id, "USER_ROLE_CHANGED", f"User {target_user_id} role updated to '{new_role}' by admin {admin_id}", now)
+    )
+    conn.commit()
+    conn.close()
+
+    try:
+        client = get_supabase()
+        if client:
+            client.table("profiles").update({"role": new_role}).eq("id", target_user_id).execute()
+            save_audit_log_supabase(
+                actor=admin_user,
+                action="USER_ROLE_CHANGED",
+                resource_type="user",
+                resource_id=target_user_id,
+                after_state={"role": new_role}
+            )
+    except Exception as sup_err:
+        logger.warning("Supabase role update error: %s", sup_err)
+
+    return {"user_id": target_user_id, "role": new_role, "updated_at": now}
+
+
+def set_user_active_db(target_user_id: str, is_active: bool, admin_user: Dict[str, Any]) -> Dict[str, Any]:
+    """Activate or deactivate user account and record audit log."""
+    conn = get_db()
+    cursor = conn.cursor()
+    now = datetime.now(timezone.utc).isoformat()
+    admin_id = admin_user["id"]
+    action_type = "USER_ACTIVATED" if is_active else "USER_DEACTIVATED"
+
+    cursor.execute(
+        "INSERT INTO audit_logs (user_id, action, details, created_at) VALUES (?, ?, ?, ?)",
+        (admin_id, action_type, f"User {target_user_id} active status set to {is_active} by admin {admin_id}", now)
+    )
+    conn.commit()
+    conn.close()
+
+    try:
+        client = get_supabase()
+        if client:
+            client.table("profiles").update({"is_active": is_active}).eq("id", target_user_id).execute()
+            save_audit_log_supabase(
+                actor=admin_user,
+                action=action_type,
+                resource_type="user",
+                resource_id=target_user_id,
+                after_state={"is_active": is_active}
+            )
+    except Exception as sup_err:
+        logger.warning("Supabase user active status update error: %s", sup_err)
+
+    return {"user_id": target_user_id, "is_active": is_active, "updated_at": now}
+
+
+def log_model_deployment_db(model_version: str, admin_user: Dict[str, Any], notes: Optional[str] = None) -> Dict[str, Any]:
+    """Record model deployment/activation in model_runs and audit_logs."""
+    conn = get_db()
+    cursor = conn.cursor()
+    now = datetime.now(timezone.utc).isoformat()
+    admin_id = admin_user["id"]
+
+    cursor.execute(
+        "INSERT INTO audit_logs (user_id, action, details, created_at) VALUES (?, ?, ?, ?)",
+        (admin_id, "MODEL_DEPLOYED", f"Model version '{model_version}' activated by admin {admin_id}. Notes: {notes or 'N/A'}", now)
+    )
+    conn.commit()
+    conn.close()
+
+    try:
+        client = get_supabase()
+        if client:
+            save_audit_log_supabase(
+                actor=admin_user,
+                action="MODEL_DEPLOYED",
+                resource_type="model",
+                resource_id=model_version,
+                after_state={"model_version": model_version, "notes": notes}
+            )
+    except Exception as sup_err:
+        logger.warning("Supabase model deployment audit error: %s", sup_err)
+
+    return {"model_version": model_version, "deployed_at": now}
+
+
+
