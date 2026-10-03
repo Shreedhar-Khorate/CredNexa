@@ -1,8 +1,8 @@
 import requests
 
 BASE = 'http://127.0.0.1:8000'
-SUPABASE_URL = 'https://juayfkmjjzxhjiytjqoi.supabase.co/rest/v1'
-SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1YXlma21qanp4aGppeXRqcW9pIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDkzOTkwMiwiZXhwIjoyMTA2NTE1OTAyfQ.Y9iQv8-LUyXwg1Ng07t3Hm1VOU-Dus2UiHLgDx7Kv1c'
+SUPABASE_URL = ''
+SERVICE_ROLE_KEY =''
 SB = {'apikey': SERVICE_ROLE_KEY, 'Authorization': 'Bearer ' + SERVICE_ROLE_KEY}
 
 # Step 1 - login
