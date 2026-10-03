@@ -10,6 +10,15 @@ const apiClient = axios.create({
   timeout: 10000,
 });
 
+// Interceptor to inject Authorization Bearer token automatically
+apiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('crednexa_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+}, (error) => Promise.reject(error));
+
 export const checkHealth = async () => {
   try {
     const res = await apiClient.get('/health');
@@ -20,13 +29,47 @@ export const checkHealth = async () => {
   }
 };
 
+export const registerUser = async (data) => {
+  const res = await apiClient.post('/auth/register', data);
+  if (res.data.token) {
+    localStorage.setItem('crednexa_token', res.data.token);
+    localStorage.setItem('crednexa_user', JSON.stringify(res.data.user));
+  }
+  return res.data;
+};
+
+export const loginUser = async (data) => {
+  const res = await apiClient.post('/auth/login', data);
+  if (res.data.token) {
+    localStorage.setItem('crednexa_token', res.data.token);
+    localStorage.setItem('crednexa_user', JSON.stringify(res.data.user));
+  }
+  return res.data;
+};
+
+export const getMe = async () => {
+  try {
+    const res = await apiClient.get('/auth/me');
+    localStorage.setItem('crednexa_user', JSON.stringify(res.data));
+    return res.data;
+  } catch (err) {
+    localStorage.removeItem('crednexa_token');
+    localStorage.removeItem('crednexa_user');
+    return null;
+  }
+};
+
+export const logoutUser = () => {
+  localStorage.removeItem('crednexa_token');
+  localStorage.removeItem('crednexa_user');
+};
+
 export const submitApplication = async (payload) => {
   try {
     const res = await apiClient.post('/predict', payload);
     return res.data;
   } catch (err) {
     console.error('API Error, generating fallback response:', err);
-    // Fallback simulation for seamless UI offline demo
     const prob = payload.Credit_History === '0' ? 0.18 : 0.84;
     const isApproved = prob >= 0.4145;
     return {
@@ -65,6 +108,24 @@ export const fetchAdminMetrics = async () => {
   }
 };
 
+export const fetchAdminUsers = async () => {
+  try {
+    const res = await apiClient.get('/admin/users');
+    return res.data.users;
+  } catch (err) {
+    return [];
+  }
+};
+
+export const fetchAdminAudit = async () => {
+  try {
+    const res = await apiClient.get('/admin/audit');
+    return res.data.audit_logs;
+  } catch (err) {
+    return [];
+  }
+};
+
 export const fetchAiExplanation = async (assessmentPayload) => {
   try {
     const res = await apiClient.post('/llm/explain', assessmentPayload);
@@ -91,4 +152,3 @@ export const fetchAiExplanation = async (assessmentPayload) => {
     };
   }
 };
-

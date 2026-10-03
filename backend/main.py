@@ -26,17 +26,34 @@ if ENV_PATH.exists():
     load_dotenv(dotenv_path=ENV_PATH)
 
 import pandas as pd
-from fastapi import FastAPI, HTTPException, Query, status
+from fastapi import FastAPI, HTTPException, Query, Header, status, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from ml.config import ARTIFACTS_DIR, COEFFS_PATH, METRICS_PATH, MODEL_PATH
 from ml.predict import ValidationError, predict
 from backend.services.llm_service import explain_assessment
+from backend.db import (
+    init_db,
+    save_application_db,
+    get_applications_db,
+    get_application_by_id_db,
+    create_user_db,
+    authenticate_user_db,
+    get_user_by_id_db,
+    get_all_users_db,
+    get_audit_logs_db,
+)
+from backend.auth import (
+    create_access_token,
+    get_current_user,
+    get_current_user_optional,
+    get_admin_user,
+)
 
 app = FastAPI(
     title="CredNexa API",
-    description="Backend Machine Learning Inference & Analytics Service for CredNexa Loan Screening",
+    description="Backend Machine Learning Inference, Database & Analytics Service for CredNexa Loan Screening",
     version="1.0.0",
 )
 
@@ -49,11 +66,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In-memory storage for applications log (or SQLite fallback)
-APPLICATIONS_DB: List[Dict[str, Any]] = []
+
+@app.on_event("startup")
+def on_startup():
+    """Initialize SQLite database tables and seed demo accounts on server boot."""
+    init_db()
+    logger.info("CredNexa SQLite database initialized and ready.")
 
 
 # --- Pydantic Data Schemas ---
+class UserRegisterRequest(BaseModel):
+    full_name: str = Field(..., min_length=2, description="Full Name")
+    email: str = Field(..., description="Email Address")
+    password: str = Field(..., min_length=6, description="Password")
+
+
+class UserLoginRequest(BaseModel):
+    email: str = Field(..., description="Email Address")
+    password: str = Field(..., description="Password")
+
+
+class AuthResponse(BaseModel):
+    token: str
+    user: Dict[str, Any]
+
+
 class LoanApplicationRequest(BaseModel):
     applicant_name: str = Field(..., description="Applicant full name")
     ApplicantIncome: float = Field(..., ge=0, description="Monthly applicant income in INR")
@@ -105,32 +142,71 @@ def health_check():
     model_loaded = MODEL_PATH.exists()
     metrics_loaded = METRICS_PATH.exists()
     gemini_key = os.getenv("GEMINI_API_KEY", "")
-    logger.info("Health check endpoint queried")
     return {
         "status": "healthy",
-        "service": "CredNexa Backend API",
+        "service": "CredNexa Backend API with SQLite Persistence",
         "model_loaded": model_loaded,
         "metrics_loaded": metrics_loaded,
         "active_version": "v1",
         "llm_config": {
             "gemini_configured": bool(gemini_key and gemini_key != "your_gemini_api_key_here"),
             "model": os.getenv("GEMINI_MODEL", "gemini-1.5-flash"),
-            "temperature": float(os.getenv("GEMINI_TEMPERATURE", 0.2)),
-            "max_tokens": int(os.getenv("GEMINI_MAX_TOKENS", 700)),
-            "timeout_seconds": float(os.getenv("GEMINI_TIMEOUT_SECONDS", 10.0)),
         },
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
 
+# --- Auth Endpoints ---
+@app.post("/api/v1/auth/register", response_model=AuthResponse, summary="Register User")
+def register_user(payload: UserRegisterRequest):
+    """Register a new user account."""
+    try:
+        user = create_user_db(
+            full_name=payload.full_name,
+            email=payload.email,
+            password=payload.password,
+            role="user"
+        )
+        token = create_access_token(user_id=user["id"], email=user["email"], role=user["role"])
+        return {"token": token, "user": user}
+    except ValueError as ve:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@app.post("/api/v1/auth/login", response_model=AuthResponse, summary="User Login")
+def login_user(payload: UserLoginRequest):
+    """Authenticate user with email and password."""
+    user = authenticate_user_db(payload.email, payload.password)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
+    token = create_access_token(user_id=user["id"], email=user["email"], role=user["role"])
+    return {"token": token, "user": user}
+
+
+@app.get("/api/v1/auth/me", summary="Get Current User Profile")
+def get_me(user: Dict[str, Any] = Depends(get_current_user)):
+    """Fetch current user profile from bearer token."""
+    return user
+
+
+# --- Loan & Prediction Endpoints ---
 @app.post("/api/v1/predict", response_model=PredictionResponse, summary="Submit Loan Application")
-def predict_loan_eligibility(payload: LoanApplicationRequest):
-    """Execute ML prediction pipeline and return prediction with attached LLM reasoning explanation."""
+def predict_loan_eligibility(
+    payload: LoanApplicationRequest,
+    authorization: Optional[str] = Header(None)
+):
+    """Execute ML prediction pipeline, generate LLM reasoning, and persist application in SQLite DB."""
     try:
         raw_dict = payload.model_dump()
         applicant_name = raw_dict.pop("applicant_name", "Anonymous Applicant")
 
-        logger.info(f"Processing loan application for: {applicant_name}")
+        # Get user ID if authenticated, else assign default system demo user
+        current_user = get_current_user_optional(authorization)
+        user_id = current_user["id"] if current_user else "anonymous_system_user"
+
+        logger.info(f"Processing loan application for: {applicant_name} (user_id: {user_id})")
 
         # Call core ML prediction engine
         res = predict(raw_dict)
@@ -156,16 +232,14 @@ def predict_loan_eligibility(payload: LoanApplicationRequest):
         try:
             explanation = explain_assessment(record)
             record["llm_explanation"] = explanation
-            logger.info("Generated LLM Explanation Engine: %s", explanation.get("engine_used"))
-            logger.info("FULL LLM EXPLANATION RESPONSE LOG:\n%s", json.dumps(explanation, indent=2))
         except Exception as llm_err:
             logger.warning("Failed to generate LLM explanation on predict: %s", llm_err)
             record["llm_explanation"] = None
 
-        # Store in historical log
-        APPLICATIONS_DB.insert(0, record)
+        # Persist permanently into SQLite Database
+        save_application_db(record, user_id=user_id)
 
-        logger.info(f"Application {app_id} evaluated: decision={res['decision']}, prob={res['probability']:.4f}")
+        logger.info(f"Application {app_id} evaluated & saved to DB: decision={res['decision']}, prob={res['probability']:.4f}")
         return record
 
     except ValidationError as ve:
@@ -175,21 +249,32 @@ def predict_loan_eligibility(payload: LoanApplicationRequest):
 
 
 @app.get("/api/v1/applications", summary="List Application History")
-def list_applications(limit: int = Query(50, ge=1, le=200)):
-    """Retrieve history of submitted applications."""
+def list_applications(
+    limit: int = Query(50, ge=1, le=200),
+    authorization: Optional[str] = Header(None)
+):
+    """Retrieve history of submitted applications from SQLite database."""
+    current_user = get_current_user_optional(authorization)
+    
+    # If admin, retrieve all applications; if user, retrieve own applications; if guest, retrieve all limit
+    if current_user and current_user.get("role") != "admin":
+        apps = get_applications_db(user_id=current_user["id"], limit=limit)
+    else:
+        apps = get_applications_db(user_id=None, limit=limit)
+        
     return {
-        "total": len(APPLICATIONS_DB),
-        "applications": APPLICATIONS_DB[:limit],
+        "total": len(apps),
+        "applications": apps,
     }
 
 
 @app.get("/api/v1/applications/{application_id}", summary="Get Application Detail")
 def get_application(application_id: str):
-    """Retrieve detailed assessment report by application UUID."""
-    for app_record in APPLICATIONS_DB:
-        if app_record["id"] == application_id:
-            return app_record
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application record not found")
+    """Retrieve detailed assessment report by application UUID from database."""
+    app_record = get_application_by_id_db(application_id)
+    if not app_record:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application record not found")
+    return app_record
 
 
 @app.get("/api/v1/admin/metrics", summary="Admin Analytics & Model Monitoring")
@@ -210,19 +295,28 @@ def get_admin_metrics():
         "unified_model_comparison": metrics_data.get("unified_model_comparison", {}),
         "final_calibrated_holdout": metrics_data.get("final_calibrated_holdout", {}),
         "chosen_threshold": metrics_data.get("chosen_threshold", 0.4145),
-        "threshold_selection_source": metrics_data.get("threshold_selection_source", ""),
-        "model_choice_rationale": metrics_data.get("model_choice_rationale", ""),
         "coefficients": coeffs,
         "metadata": metrics_data.get("metadata", {}),
     }
 
 
+@app.get("/api/v1/admin/users", summary="List All Users (Admin)")
+def admin_list_users(admin: Dict[str, Any] = Depends(get_admin_user)):
+    """List registered users in database."""
+    return {"users": get_all_users_db()}
+
+
+@app.get("/api/v1/admin/audit", summary="Get Audit Logs (Admin)")
+def admin_get_audit(admin: Dict[str, Any] = Depends(get_admin_user)):
+    """List system audit logs."""
+    return {"audit_logs": get_audit_logs_db()}
+
+
 @app.post("/api/v1/llm/explain", summary="Generate AI Explanation from Assessment Object")
 def explain_assessment_payload(payload: Dict[str, Any]):
-    """Generate structured AI explanation for an in-memory assessment object."""
+    """Generate structured AI explanation for an assessment object."""
     try:
         explanation = explain_assessment(payload)
-        logger.info("FULL LLM EXPLANATION RESPONSE LOG:\n%s", json.dumps(explanation, indent=2))
         return {
             "status": "success",
             "explanation": explanation
@@ -233,13 +327,8 @@ def explain_assessment_payload(payload: Dict[str, Any]):
 
 @app.post("/api/v1/llm/explain/{application_id}", summary="Generate AI Explanation by Application UUID")
 def explain_application_by_id(application_id: str):
-    """Retrieve saved application by ID and generate AI explanation."""
-    target_record = None
-    for app_record in APPLICATIONS_DB:
-        if app_record["id"] == application_id:
-            target_record = app_record
-            break
-            
+    """Retrieve saved application from DB by ID and generate AI explanation."""
+    target_record = get_application_by_id_db(application_id)
     if not target_record:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application record not found")
         
@@ -254,4 +343,3 @@ def explain_application_by_id(application_id: str):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)
-
