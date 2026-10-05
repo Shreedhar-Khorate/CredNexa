@@ -330,13 +330,19 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-[var(--cn-border)] bg-[var(--cn-surface)] py-6 text-center text-xs text-[var(--cn-text-subtle)] font-mono transition-colors duration-200">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <footer className="border-t border-[var(--cn-border)] bg-[var(--cn-surface)] py-6 text-xs text-[var(--cn-text-subtle)] font-mono transition-colors duration-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-sky-500" />
-            <span className="text-[var(--cn-text-muted)] font-sans">CredNexa ML + Supabase Cloud DB &copy; 2026</span>
+            <span className="text-[var(--cn-text-muted)] font-sans font-medium">CredNexa &copy; {new Date().getFullYear()} CredNexa Platform</span>
           </div>
-          <p className="text-[var(--cn-text-subtle)] font-sans">Educational decision-support demo. Not for real lending decisions.</p>
+          <div className="flex items-center gap-4 text-[var(--cn-text-muted)] font-sans">
+            <span className="hover:text-[var(--cn-text-main)] transition cursor-pointer">Privacy Policy</span>
+            <span>·</span>
+            <span className="hover:text-[var(--cn-text-main)] transition cursor-pointer">Terms of Service</span>
+            <span>·</span>
+            <span className="hover:text-[var(--cn-text-main)] transition cursor-pointer">Risk Compliance</span>
+          </div>
         </div>
       </footer>
     </div>

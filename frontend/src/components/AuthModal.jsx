@@ -176,8 +176,10 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           {isRegister && (
             <div>
               <label className="cn-label" htmlFor="auth-fullname">Full Name</label>
-              <div className="relative">
-                <User className="w-4 h-4 text-[var(--cn-text-subtle)] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <div className="relative flex items-center">
+                <div className="absolute left-0 top-0 bottom-0 w-10 flex items-center justify-center text-[var(--cn-text-subtle)] pointer-events-none">
+                  <User className="w-4 h-4" />
+                </div>
                 <input
                   id="auth-fullname"
                   type="text"
@@ -185,7 +187,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="e.g. Jane Doe"
-                  className="cn-input pl-10"
+                  className="cn-input !pl-10"
                 />
               </div>
             </div>
@@ -193,8 +195,10 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
 
           <div>
             <label className="cn-label" htmlFor="auth-email">Email Address</label>
-            <div className="relative">
-              <Mail className="w-4 h-4 text-[var(--cn-text-subtle)] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <div className="relative flex items-center">
+              <div className="absolute left-0 top-0 bottom-0 w-10 flex items-center justify-center text-[var(--cn-text-subtle)] pointer-events-none">
+                <Mail className="w-4 h-4" />
+              </div>
               <input
                 id="auth-email"
                 type="email"
@@ -202,15 +206,17 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
-                className="cn-input pl-10"
+                className="cn-input !pl-10"
               />
             </div>
           </div>
 
           <div>
             <label className="cn-label" htmlFor="auth-password">Password</label>
-            <div className="relative">
-              <Lock className="w-4 h-4 text-[var(--cn-text-subtle)] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <div className="relative flex items-center">
+              <div className="absolute left-0 top-0 bottom-0 w-10 flex items-center justify-center text-[var(--cn-text-subtle)] pointer-events-none">
+                <Lock className="w-4 h-4" />
+              </div>
               <input
                 id="auth-password"
                 type={showPassword ? 'text' : 'password'}
@@ -218,12 +224,12 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="cn-input pl-10 pr-10"
+                className="cn-input !pl-10 !pr-10"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--cn-text-subtle)] hover:text-[var(--cn-text-main)] transition cursor-pointer p-1"
+                className="absolute right-0 top-0 bottom-0 w-10 flex items-center justify-center text-[var(--cn-text-subtle)] hover:text-[var(--cn-text-main)] transition cursor-pointer"
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
