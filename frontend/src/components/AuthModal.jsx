@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  ShieldCheck, Lock, Mail, User, X, AlertCircle, Sparkles, Loader2, ArrowRight
+  ShieldCheck, Lock, Mail, User, X, AlertCircle, Sparkles, Loader2, ArrowRight, Eye, EyeOff
 } from 'lucide-react';
 import { loginUser, registerUser } from '../services/api';
 
@@ -9,6 +9,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -66,7 +67,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
       aria-modal="true"
       aria-labelledby="auth-modal-title"
     >
-      <div className="cn-card-elevated w-full max-w-md p-6 sm:p-7 relative text-[var(--cn-text-main)] shadow-2xl transition-all">
+      <div className="cn-card-elevated w-full max-w-md p-6 sm:p-7 relative text-[var(--cn-text-main)] shadow-2xl transition-all max-h-[92vh] overflow-y-auto">
         
         {/* Close Button */}
         <button
@@ -125,15 +126,15 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
 
         {/* Demo Quick Fill Credentials (Shown in Sign In mode) */}
         {!isRegister && (
-          <div className="mb-5 p-3 rounded-xl bg-[var(--cn-surface-muted)] border border-[var(--cn-border)] space-y-2.5">
+          <div className="mb-5 p-3.5 rounded-xl bg-[var(--cn-surface-muted)] border border-[var(--cn-border)] space-y-2.5">
             <div className="flex items-center justify-between text-xs text-sky-500 dark:text-sky-400 font-semibold">
               <div className="flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                 <span>Instant Demo Access</span>
               </div>
-              <span className="text-[10px] text-[var(--cn-text-subtle)] font-normal">Click to pre-fill</span>
+              <span className="text-[10px] text-[var(--cn-text-subtle)] font-normal">Click role to fill</span>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2.5">
               <button
                 type="button"
                 onClick={() => fillDemo('admin')}
@@ -143,7 +144,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                   <span className="font-bold text-[10px] text-indigo-400 uppercase tracking-wide">Admin</span>
                   <ArrowRight className="w-3 h-3 text-[var(--cn-text-subtle)] group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-all" />
                 </div>
-                <div className="font-medium text-[var(--cn-text-main)] text-[11px]">Admin Underwriter</div>
+                <div className="font-medium text-[var(--cn-text-main)] text-[11px]">Underwriter</div>
                 <div className="text-[10px] text-[var(--cn-text-subtle)] font-mono truncate">admin@crednexa.com</div>
               </button>
               <button
@@ -171,12 +172,12 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         )}
 
         {/* Authentication Form */}
-        <form onSubmit={handleSubmit} className="space-y-3.5">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {isRegister && (
             <div>
               <label className="cn-label" htmlFor="auth-fullname">Full Name</label>
               <div className="relative">
-                <User className="w-4 h-4 text-[var(--cn-text-subtle)] absolute left-3 top-3" />
+                <User className="w-4 h-4 text-[var(--cn-text-subtle)] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   id="auth-fullname"
                   type="text"
@@ -184,7 +185,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="e.g. Jane Doe"
-                  className="cn-input pl-9"
+                  className="cn-input pl-10"
                 />
               </div>
             </div>
@@ -193,7 +194,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           <div>
             <label className="cn-label" htmlFor="auth-email">Email Address</label>
             <div className="relative">
-              <Mail className="w-4 h-4 text-[var(--cn-text-subtle)] absolute left-3 top-3" />
+              <Mail className="w-4 h-4 text-[var(--cn-text-subtle)] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 id="auth-email"
                 type="email"
@@ -201,7 +202,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
-                className="cn-input pl-9"
+                className="cn-input pl-10"
               />
             </div>
           </div>
@@ -209,23 +210,31 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           <div>
             <label className="cn-label" htmlFor="auth-password">Password</label>
             <div className="relative">
-              <Lock className="w-4 h-4 text-[var(--cn-text-subtle)] absolute left-3 top-3" />
+              <Lock className="w-4 h-4 text-[var(--cn-text-subtle)] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 id="auth-password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="cn-input pl-9"
+                className="cn-input pl-10 pr-10"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--cn-text-subtle)] hover:text-[var(--cn-text-main)] transition cursor-pointer p-1"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="cn-btn cn-btn-primary w-full py-2.5 text-sm mt-2 shadow-md cursor-pointer"
+            className="cn-btn cn-btn-primary w-full py-2.5 text-sm mt-2 shadow-md cursor-pointer flex items-center justify-center gap-2"
           >
             {loading ? (
               <>
@@ -235,7 +244,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             ) : (
               <>
                 <span>{isRegister ? 'Create CredNexa Account' : 'Sign In to CredNexa'}</span>
-                <ArrowRight className="w-4 h-4 ml-1" />
+                <ArrowRight className="w-4 h-4" />
               </>
             )}
           </button>
