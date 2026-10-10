@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  ShieldCheck, Lock, Mail, User, X, AlertCircle, Sparkles, Loader2, ArrowRight, Eye, EyeOff
+  ShieldCheck, Lock, Mail, UserRound, X, AlertCircle, Sparkles, Loader2, ArrowRight, Eye, EyeOff
 } from 'lucide-react';
 import { loginUser, registerUser } from '../services/api';
 
@@ -40,7 +40,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
       }
       onClose();
     } catch (err) {
-      const msg = err.response?.data?.detail || 'Authentication failed. Please check your credentials.';
+      const msg = err.response?.data?.detail || 'Authentication failed. Please verify your credentials.';
       setError(msg);
     } finally {
       setLoading(false);
@@ -80,7 +80,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
 
         {/* Modal Brand & Header */}
         <div className="text-center space-y-2 mb-5">
-          <div className="inline-flex p-3 rounded-2xl bg-gradient-to-br from-[#0284c7] to-[#4f46e5] text-white shadow-md shadow-[#0284c7]/20">
+          <div className="inline-flex p-3 rounded-2xl bg-gradient-to-br from-[var(--cn-primary)] to-[var(--cn-accent-secondary)] text-white shadow-sm">
             <ShieldCheck className="w-6 h-6" />
           </div>
           <div className="text-xs font-semibold tracking-wider uppercase">
@@ -93,7 +93,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           </h2>
           <p className="text-xs text-[var(--cn-text-muted)] max-w-xs mx-auto">
             {isRegister
-              ? 'Register to track credit risk scores and personal evaluations'
+              ? 'Register to persist credit scores and manage your underwriting portfolio'
               : 'Sign in to access your saved credit evaluations & reports'}
           </p>
         </div>
@@ -105,7 +105,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             onClick={() => { setIsRegister(false); setError(null); }}
             className={`py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
               !isRegister
-                ? 'bg-[var(--cn-surface)] text-[var(--cn-text-main)] shadow-sm border border-[var(--cn-border-muted)]'
+                ? 'bg-[var(--cn-surface-solid)] text-[var(--cn-text-main)] shadow-xs border border-[var(--cn-border-muted)]'
                 : 'text-[var(--cn-text-muted)] hover:text-[var(--cn-text-main)]'
             }`}
           >
@@ -116,7 +116,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             onClick={() => { setIsRegister(true); setError(null); }}
             className={`py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
               isRegister
-                ? 'bg-[var(--cn-surface)] text-[var(--cn-text-main)] shadow-sm border border-[var(--cn-border-muted)]'
+                ? 'bg-[var(--cn-surface-solid)] text-[var(--cn-text-main)] shadow-xs border border-[var(--cn-border-muted)]'
                 : 'text-[var(--cn-text-muted)] hover:text-[var(--cn-text-main)]'
             }`}
           >
@@ -124,21 +124,21 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           </button>
         </div>
 
-        {/* Demo Quick Fill Credentials (Shown in Sign In mode) */}
+        {/* Demo Quick Fill Credentials */}
         {!isRegister && (
-          <div className="mb-5 p-3.5 rounded-xl bg-[var(--cn-surface-muted)] border border-[var(--cn-border)] space-y-2.5">
-            <div className="flex items-center justify-between text-xs text-sky-500 dark:text-sky-400 font-semibold">
+          <div className="mb-5 p-3 rounded-xl bg-[var(--cn-surface-muted)] border border-[var(--cn-border)] space-y-2.5">
+            <div className="flex items-center justify-between text-xs text-[var(--cn-primary)] font-semibold">
               <div className="flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <Sparkles className="w-3.5 h-3.5" />
                 <span>Instant Demo Access</span>
               </div>
-              <span className="text-[10px] text-[var(--cn-text-subtle)] font-normal">Click role to fill</span>
+              <span className="text-[10px] text-[var(--cn-text-subtle)] font-normal">Click to fill</span>
             </div>
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => fillDemo('admin')}
-                className="p-2.5 rounded-lg bg-[var(--cn-surface)] hover:bg-[var(--cn-surface-elevated)] text-xs border border-[var(--cn-border)] hover:border-indigo-500/50 transition-all text-left cursor-pointer group shadow-xs"
+                className="p-2.5 rounded-lg bg-[var(--cn-surface-solid)] hover:bg-[var(--cn-surface-elevated)] text-xs border border-[var(--cn-border)] hover:border-indigo-500/50 transition-all text-left cursor-pointer group shadow-xs"
               >
                 <div className="flex items-center justify-between mb-0.5">
                   <span className="font-bold text-[10px] text-indigo-400 uppercase tracking-wide">Admin</span>
@@ -150,11 +150,11 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
               <button
                 type="button"
                 onClick={() => fillDemo('user')}
-                className="p-2.5 rounded-lg bg-[var(--cn-surface)] hover:bg-[var(--cn-surface-elevated)] text-xs border border-[var(--cn-border)] hover:border-sky-500/50 transition-all text-left cursor-pointer group shadow-xs"
+                className="p-2.5 rounded-lg bg-[var(--cn-surface-solid)] hover:bg-[var(--cn-surface-elevated)] text-xs border border-[var(--cn-border)] hover:border-[var(--cn-primary)]/50 transition-all text-left cursor-pointer group shadow-xs"
               >
                 <div className="flex items-center justify-between mb-0.5">
-                  <span className="font-bold text-[10px] text-sky-500 dark:text-sky-400 uppercase tracking-wide">Applicant</span>
-                  <ArrowRight className="w-3 h-3 text-[var(--cn-text-subtle)] group-hover:text-sky-400 group-hover:translate-x-0.5 transition-all" />
+                  <span className="font-bold text-[10px] text-[var(--cn-primary)] uppercase tracking-wide">Applicant</span>
+                  <ArrowRight className="w-3 h-3 text-[var(--cn-text-subtle)] group-hover:text-[var(--cn-primary)] group-hover:translate-x-0.5 transition-all" />
                 </div>
                 <div className="font-medium text-[var(--cn-text-main)] text-[11px]">Loan Applicant</div>
                 <div className="text-[10px] text-[var(--cn-text-subtle)] font-mono truncate">user@crednexa.com</div>
@@ -165,29 +165,27 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
 
         {/* Error Notification */}
         {error && (
-          <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-500 dark:text-rose-400 text-xs flex items-center gap-2.5 animate-fadeIn">
+          <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-600 dark:text-rose-400 text-xs flex items-center gap-2.5 animate-fadeIn">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {/* Authentication Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3.5">
           {isRegister && (
             <div>
               <label className="cn-label" htmlFor="auth-fullname">Full Name</label>
-              <div className="relative flex items-center">
-                <div className="absolute left-0 top-0 bottom-0 w-10 flex items-center justify-center text-[var(--cn-text-subtle)] pointer-events-none">
-                  <User className="w-4 h-4" />
-                </div>
+              <div className="cn-input-wrapper">
+                <UserRound className="cn-input-icon-lead" />
                 <input
                   id="auth-fullname"
                   type="text"
                   required
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="e.g. Jane Doe"
-                  className="cn-input !pl-10"
+                  placeholder="e.g. Eleanor Vance"
+                  className="cn-input cn-input-with-lead"
                 />
               </div>
             </div>
@@ -195,10 +193,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
 
           <div>
             <label className="cn-label" htmlFor="auth-email">Email Address</label>
-            <div className="relative flex items-center">
-              <div className="absolute left-0 top-0 bottom-0 w-10 flex items-center justify-center text-[var(--cn-text-subtle)] pointer-events-none">
-                <Mail className="w-4 h-4" />
-              </div>
+            <div className="cn-input-wrapper">
+              <Mail className="cn-input-icon-lead" />
               <input
                 id="auth-email"
                 type="email"
@@ -206,17 +202,15 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
-                className="cn-input !pl-10"
+                className="cn-input cn-input-with-lead"
               />
             </div>
           </div>
 
           <div>
             <label className="cn-label" htmlFor="auth-password">Password</label>
-            <div className="relative flex items-center">
-              <div className="absolute left-0 top-0 bottom-0 w-10 flex items-center justify-center text-[var(--cn-text-subtle)] pointer-events-none">
-                <Lock className="w-4 h-4" />
-              </div>
+            <div className="cn-input-wrapper">
+              <Lock className="cn-input-icon-lead" />
               <input
                 id="auth-password"
                 type={showPassword ? 'text' : 'password'}
@@ -224,13 +218,13 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="cn-input !pl-10 !pr-10"
+                className="cn-input cn-input-with-lead cn-input-with-trail"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-0 top-0 bottom-0 w-10 flex items-center justify-center text-[var(--cn-text-subtle)] hover:text-[var(--cn-text-main)] transition cursor-pointer"
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
+                className="cn-input-icon-trail"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -240,17 +234,17 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           <button
             type="submit"
             disabled={loading}
-            className="cn-btn cn-btn-primary w-full py-2.5 text-sm mt-2 shadow-md cursor-pointer flex items-center justify-center gap-2"
+            className="cn-btn cn-btn-primary w-full py-2.5 text-xs font-bold uppercase tracking-wider mt-2 shadow-md cursor-pointer"
           >
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>{isRegister ? 'Creating Account...' : 'Signing In...'}</span>
+                <span>{isRegister ? 'Registering Account...' : 'Authenticating...'}</span>
               </>
             ) : (
               <>
                 <span>{isRegister ? 'Create CredNexa Account' : 'Sign In to CredNexa'}</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-4 h-4 ml-1" />
               </>
             )}
           </button>
@@ -264,7 +258,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
               <button
                 type="button"
                 onClick={() => { setIsRegister(false); setError(null); }}
-                className="text-sky-500 dark:text-sky-400 hover:underline font-semibold cursor-pointer"
+                className="text-[var(--cn-primary)] hover:underline font-semibold cursor-pointer"
               >
                 Sign In
               </button>
@@ -275,7 +269,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
               <button
                 type="button"
                 onClick={() => { setIsRegister(true); setError(null); }}
-                className="text-sky-500 dark:text-sky-400 hover:underline font-semibold cursor-pointer"
+                className="text-[var(--cn-primary)] hover:underline font-semibold cursor-pointer"
               >
                 Register
               </button>

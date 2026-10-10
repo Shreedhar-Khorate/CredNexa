@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Sparkles, Calculator, User, Coins, ShieldCheck, ArrowRight, Loader2
+  Sparkles, Calculator, UserRound, Wallet, Landmark, ArrowRight, Loader2
 } from 'lucide-react';
 
 const SAMPLE_PROFILES = {
@@ -87,89 +87,65 @@ export default function LoanForm({ onSubmit, loading }) {
 
   return (
     <div className="cn-card p-6 sm:p-8 relative">
-      {/* Top Header & Presets */}
+      {/* ── Top Header & Profile Presets ── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-6 border-b border-[var(--cn-border)]">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="cn-eyebrow">
-              <Calculator className="w-3.5 h-3.5" /> Workspace
+              <Calculator className="w-3.5 h-3.5" /> Assessment Workspace
             </span>
           </div>
-          <h2 className="text-xl font-bold text-[var(--cn-text-main)] flex items-center space-x-2">
-            <span>Loan Application Details</span>
-          </h2>
+          <h3 className="text-lg sm:text-xl font-bold text-[var(--cn-text-main)]">
+            Applicant & Credit Parameters
+          </h3>
           <p className="text-xs text-[var(--cn-text-muted)] mt-0.5">
-            Input applicant parameters to run instant calibrated machine learning risk screening.
+            Configure applicant profile parameters to generate instant calibrated ML risk metrics.
           </p>
         </div>
 
-        {/* Preset Buttons */}
+        {/* Quick Profile Presets */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-[var(--cn-text-subtle)] font-mono flex items-center mr-1">
-            <Sparkles className="w-3.5 h-3.5 text-amber-500 mr-1" /> Presets:
+          <span className="text-[11px] text-[var(--cn-text-subtle)] font-mono flex items-center mr-1">
+            <Sparkles className="w-3 h-3 text-[var(--cn-primary)] mr-1" /> Presets:
           </span>
-          <button
-            type="button"
-            onClick={() => handlePreset('standard')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${
-              activePreset === 'standard'
-                ? 'bg-sky-500/15 text-sky-500 dark:text-sky-400 border border-sky-500/40 shadow-xs'
-                : 'bg-[var(--cn-surface-elevated)] hover:bg-[var(--cn-surface-muted)] text-[var(--cn-text-muted)] border border-[var(--cn-border)]'
-            }`}
-          >
-            Standard
-          </button>
-          <button
-            type="button"
-            onClick={() => handlePreset('high_income')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${
-              activePreset === 'high_income'
-                ? 'bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 border border-emerald-500/40 shadow-xs'
-                : 'bg-[var(--cn-surface-elevated)] hover:bg-[var(--cn-surface-muted)] text-[var(--cn-text-muted)] border border-[var(--cn-border)]'
-            }`}
-          >
-            High Income
-          </button>
-          <button
-            type="button"
-            onClick={() => handlePreset('bad_credit')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${
-              activePreset === 'bad_credit'
-                ? 'bg-rose-500/15 text-rose-500 dark:text-rose-400 border border-rose-500/40 shadow-xs'
-                : 'bg-[var(--cn-surface-elevated)] hover:bg-[var(--cn-surface-muted)] text-[var(--cn-text-muted)] border border-[var(--cn-border)]'
-            }`}
-          >
-            Bad Credit
-          </button>
-          <button
-            type="button"
-            onClick={() => handlePreset('short_term')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer ${
-              activePreset === 'short_term'
-                ? 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/40 shadow-xs'
-                : 'bg-[var(--cn-surface-elevated)] hover:bg-[var(--cn-surface-muted)] text-[var(--cn-text-muted)] border border-[var(--cn-border)]'
-            }`}
-          >
-            Short Term
-          </button>
+          {[
+            { key: 'standard', label: 'Standard Prime' },
+            { key: 'high_income', label: 'High Net Worth' },
+            { key: 'bad_credit', label: 'Subprime Risk' },
+            { key: 'short_term', label: 'Short Duration' },
+          ].map(preset => {
+            const isActive = activePreset === preset.key;
+            return (
+              <button
+                key={preset.key}
+                type="button"
+                onClick={() => handlePreset(preset.key)}
+                className={`cn-preset-btn ${isActive ? 'cn-preset-btn-active' : ''}`}
+              >
+                {preset.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-7">
+      <form onSubmit={handleSubmit} className="space-y-6">
         
-        {/* ── GROUP 1: Applicant Information ── */}
+        {/* ── SECTION 1: Applicant Profile ── */}
         <div>
-          <div className="flex items-center gap-2 mb-3.5">
-            <User className="w-4 h-4 text-sky-500" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--cn-text-main)]">
-              Applicant Information
-            </h3>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="p-1.5 rounded-lg bg-[var(--cn-primary-tint)] text-[var(--cn-primary)] border border-[var(--cn-primary)]/20">
+              <UserRound className="w-3.5 h-3.5" />
+            </div>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--cn-text-main)]">
+              1. Applicant Demographics & Profile
+            </h4>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             
             {/* Applicant Name */}
             <div>
-              <label className="cn-label" htmlFor="applicant_name">Applicant Full Name</label>
+              <label className="cn-label" htmlFor="applicant_name">Applicant Full Name *</label>
               <input
                 id="applicant_name"
                 type="text"
@@ -178,7 +154,9 @@ export default function LoanForm({ onSubmit, loading }) {
                 onChange={handleChange}
                 required
                 className="cn-input"
+                placeholder="e.g. Eleanor Vance"
               />
+              <span className="cn-helper">Full legal name of primary borrower</span>
             </div>
 
             {/* Marital Status */}
@@ -194,9 +172,10 @@ export default function LoanForm({ onSubmit, loading }) {
                 <option value="Yes">Married</option>
                 <option value="No">Single</option>
               </select>
+              <span className="cn-helper">Household obligation proxy</span>
             </div>
 
-            {/* Number of Dependents */}
+            {/* Dependents */}
             <div>
               <label className="cn-label" htmlFor="Dependents">Dependents</label>
               <select
@@ -211,9 +190,10 @@ export default function LoanForm({ onSubmit, loading }) {
                 <option value="2">2 Dependents</option>
                 <option value="3+">3+ Dependents</option>
               </select>
+              <span className="cn-helper">Financial dependents count</span>
             </div>
 
-            {/* Education Level */}
+            {/* Education */}
             <div>
               <label className="cn-label" htmlFor="Education">Education Level</label>
               <select
@@ -223,27 +203,30 @@ export default function LoanForm({ onSubmit, loading }) {
                 onChange={handleChange}
                 className="cn-select"
               >
-                <option value="Graduate">Graduate</option>
-                <option value="Not Graduate">Not Graduate</option>
+                <option value="Graduate">Graduate Degree</option>
+                <option value="Not Graduate">Non-Graduate</option>
               </select>
+              <span className="cn-helper">Earning capacity indicator</span>
             </div>
 
           </div>
         </div>
 
-        {/* ── GROUP 2: Financial Information ── */}
-        <div className="pt-2 border-t border-[var(--cn-border)]">
-          <div className="flex items-center gap-2 mb-3.5">
-            <Coins className="w-4 h-4 text-indigo-500" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--cn-text-main)]">
-              Financial & Loan Parameters
-            </h3>
+        {/* ── SECTION 2: Financials & Loan Parameters ── */}
+        <div className="pt-4 border-t border-[var(--cn-border)]">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="p-1.5 rounded-lg bg-[var(--cn-primary-tint)] text-[var(--cn-primary)] border border-[var(--cn-primary)]/20">
+              <Wallet className="w-3.5 h-3.5" />
+            </div>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--cn-text-main)]">
+              2. Financials & Requested Loan Terms
+            </h4>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             
             {/* Applicant Income */}
             <div>
-              <label className="cn-label" htmlFor="ApplicantIncome">Applicant Income (₹/mo)</label>
+              <label className="cn-label" htmlFor="ApplicantIncome">Primary Income (₹/mo) *</label>
               <input
                 id="ApplicantIncome"
                 type="number"
@@ -254,12 +237,12 @@ export default function LoanForm({ onSubmit, loading }) {
                 min="0"
                 className="cn-input font-mono"
               />
-              <span className="cn-helper">Monthly primary income</span>
+              <span className="cn-helper">Monthly verified gross income</span>
             </div>
 
             {/* Coapplicant Income */}
             <div>
-              <label className="cn-label" htmlFor="CoapplicantIncome">Coapplicant Income (₹/mo)</label>
+              <label className="cn-label" htmlFor="CoapplicantIncome">Co-Applicant Income (₹/mo)</label>
               <input
                 id="CoapplicantIncome"
                 type="number"
@@ -269,12 +252,12 @@ export default function LoanForm({ onSubmit, loading }) {
                 min="0"
                 className="cn-input font-mono"
               />
-              <span className="cn-helper">Monthly secondary income</span>
+              <span className="cn-helper">Additional household monthly cashflow</span>
             </div>
 
             {/* Loan Amount */}
             <div>
-              <label className="cn-label" htmlFor="LoanAmount">Loan Amount (₹k)</label>
+              <label className="cn-label" htmlFor="LoanAmount">Loan Principal (₹k) *</label>
               <input
                 id="LoanAmount"
                 type="number"
@@ -285,12 +268,12 @@ export default function LoanForm({ onSubmit, loading }) {
                 min="1"
                 className="cn-input font-mono"
               />
-              <span className="cn-helper">e.g. 150 = ₹150,000</span>
+              <span className="cn-helper">Expressed in thousands (150 = ₹150,000)</span>
             </div>
 
             {/* Loan Term */}
             <div>
-              <label className="cn-label" htmlFor="Loan_Amount_Term">Loan Term (Months)</label>
+              <label className="cn-label" htmlFor="Loan_Amount_Term">Loan Duration (Months) *</label>
               <input
                 id="Loan_Amount_Term"
                 type="number"
@@ -302,25 +285,27 @@ export default function LoanForm({ onSubmit, loading }) {
                 max="480"
                 className="cn-input font-mono"
               />
-              <span className="cn-helper">360 = 30 Years</span>
+              <span className="cn-helper">360 months = 30-year amortization</span>
             </div>
 
           </div>
         </div>
 
-        {/* ── GROUP 3: Credit Risk & Demographics ── */}
-        <div className="pt-2 border-t border-[var(--cn-border)]">
-          <div className="flex items-center gap-2 mb-3.5">
-            <ShieldCheck className="w-4 h-4 text-emerald-500" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--cn-text-main)]">
-              Credit Risk & Demographics
-            </h3>
+        {/* ── SECTION 3: Credit Risk & Demographics ── */}
+        <div className="pt-4 border-t border-[var(--cn-border)]">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="p-1.5 rounded-lg bg-[var(--cn-primary-tint)] text-[var(--cn-primary)] border border-[var(--cn-primary)]/20">
+              <Landmark className="w-3.5 h-3.5" />
+            </div>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--cn-text-main)]">
+              3. Credit History & Collateral Geography
+            </h4>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             
             {/* Credit History */}
             <div>
-              <label className="cn-label" htmlFor="Credit_History">Credit History</label>
+              <label className="cn-label" htmlFor="Credit_History">Credit History Record *</label>
               <select
                 id="Credit_History"
                 name="Credit_History"
@@ -328,16 +313,16 @@ export default function LoanForm({ onSubmit, loading }) {
                 onChange={handleChange}
                 className="cn-select"
               >
-                <option value="1">Positive (1.0 - Clean Record)</option>
-                <option value="0">Negative (0.0 - Past Delinquency)</option>
-                <option value="Unknown">Unknown / Untracked</option>
+                <option value="1">Positive (1.0 — Clean Bureau Record)</option>
+                <option value="0">Negative (0.0 — Delinquency / Past Default)</option>
+                <option value="Unknown">Untracked / Insufficient History</option>
               </select>
               <span className="cn-helper">Primary ML feature weight</span>
             </div>
 
             {/* Property Area */}
             <div>
-              <label className="cn-label" htmlFor="Property_Area">Property Location</label>
+              <label className="cn-label" htmlFor="Property_Area">Property Location Area</label>
               <select
                 id="Property_Area"
                 name="Property_Area"
@@ -350,12 +335,12 @@ export default function LoanForm({ onSubmit, loading }) {
                 <option value="Rural">Rural</option>
                 <option value="Metro">Metro</option>
               </select>
-              <span className="cn-helper">Collateral geography</span>
+              <span className="cn-helper">Collateral market liquidity zone</span>
             </div>
 
             {/* Self Employed */}
             <div>
-              <label className="cn-label" htmlFor="Self_Employed">Employment Type</label>
+              <label className="cn-label" htmlFor="Self_Employed">Employment Classification</label>
               <select
                 id="Self_Employed"
                 name="Self_Employed"
@@ -364,35 +349,35 @@ export default function LoanForm({ onSubmit, loading }) {
                 className="cn-select"
               >
                 <option value="No">Salaried Employee</option>
-                <option value="Yes">Self-Employed / Business</option>
+                <option value="Yes">Self-Employed / Business Owner</option>
               </select>
-              <span className="cn-helper">Income stability proxy</span>
+              <span className="cn-helper">Income volatility proxy</span>
             </div>
 
           </div>
         </div>
 
-        {/* Submit Action Bar */}
-        <div className="pt-4 border-t border-[var(--cn-border)] flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-xs text-[var(--cn-text-subtle)] font-mono flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
-            <span>CredNexa Calibrated ML Pipeline v1.0 Ready</span>
+        {/* ── Action Bar & Submission ── */}
+        <div className="pt-5 border-t border-[var(--cn-border)] flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-xs text-[var(--cn-text-subtle)] font-mono">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Calibrated Logistic Pipeline v1.0 Ready</span>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="cn-btn cn-btn-cta px-6 py-3 text-sm shadow-md cursor-pointer w-full sm:w-auto"
+            className="cn-btn cn-btn-cta px-6 py-2.5 text-xs font-bold uppercase tracking-wider shadow-md w-full sm:w-auto"
           >
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Evaluating Applicant Profile...</span>
+                <span>Running Underwriting Analysis...</span>
               </>
             ) : (
               <>
                 <Sparkles className="w-4 h-4" />
-                <span>Run Eligibility Assessment</span>
+                <span>Execute Risk Screening</span>
                 <ArrowRight className="w-4 h-4 ml-1" />
               </>
             )}

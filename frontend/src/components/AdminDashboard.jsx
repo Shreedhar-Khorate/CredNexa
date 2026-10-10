@@ -10,23 +10,24 @@ import {
 import AnalyticsDashboard from './AnalyticsDashboard';
 
 // ── Sub-component: Metric Card ──────────────────────────────────────────────
-function MetricCard({ label, value, sub, icon: Icon, color = 'sky', pulse = false }) {
+function MetricCard({ label, value, sub, icon: Icon, color = 'teal', pulse = false }) {
   const colors = {
-    sky:     'text-sky-500 dark:text-sky-400 bg-sky-500/10 border-sky-500/20',
-    emerald: 'text-emerald-500 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-    indigo:  'text-indigo-500 dark:text-indigo-400 bg-indigo-500/10 border-indigo-500/20',
-    amber:   'text-amber-500 dark:text-amber-400 bg-amber-500/10 border-amber-500/20',
-    rose:    'text-rose-500 dark:text-rose-400 bg-rose-500/10 border-rose-500/20',
+    teal:    'text-[var(--cn-primary)] bg-[var(--cn-primary-tint)] border-[var(--cn-primary)]/20',
+    emerald: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+    indigo:  'text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 border-indigo-500/20',
+    amber:   'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20',
+    rose:    'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/20',
   };
+
   return (
     <div className="cn-card p-5">
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-mono font-medium text-[var(--cn-text-muted)]">{label}</span>
-        <div className={`p-2 rounded-xl border ${colors[color]}`}>
+        <div className={`p-2 rounded-xl border ${colors[color] || colors.teal}`}>
           <Icon className={`w-4 h-4 ${pulse ? 'animate-pulse' : ''}`} />
         </div>
       </div>
-      <div className="text-2xl font-bold text-[var(--cn-text-main)] font-mono">{value}</div>
+      <div className="text-2xl font-bold text-[var(--cn-text-main)] font-mono tracking-tight">{value}</div>
       {sub && <div className="text-[11px] text-[var(--cn-text-subtle)] mt-1">{sub}</div>}
     </div>
   );
@@ -36,10 +37,12 @@ function MetricCard({ label, value, sub, icon: Icon, color = 'sky', pulse = fals
 function SectionHeading({ icon: Icon, title, badge }) {
   return (
     <div className="flex items-center gap-2 mb-4">
-      <Icon className="w-4 h-4 text-sky-500" />
+      <Icon className="w-4 h-4 text-[var(--cn-primary)]" />
       <h3 className="text-base font-bold text-[var(--cn-text-main)]">{title}</h3>
       {badge && (
-        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-500/10 text-sky-500 dark:text-sky-400 border border-sky-500/20">{badge}</span>
+        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--cn-primary-tint)] text-[var(--cn-primary)] border border-[var(--cn-primary)]/20 font-mono">
+          {badge}
+        </span>
       )}
     </div>
   );
@@ -139,21 +142,21 @@ export default function AdminDashboard({ user, onRefreshParent }) {
   return (
     <div className="space-y-6">
 
-      {/* Admin Workbench Banner */}
-      <div className="cn-card p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-indigo-500/25 bg-gradient-to-r from-indigo-500/10 via-transparent to-sky-500/10">
+      {/* ── Admin Workbench Header Banner ── */}
+      <div className="cn-card p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-[var(--cn-primary)]/20 bg-[var(--cn-surface)]">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-indigo-500/15 border border-indigo-500/25 text-indigo-400">
+          <div className="p-2.5 rounded-xl bg-[var(--cn-primary-tint)] border border-[var(--cn-primary)]/25 text-[var(--cn-primary)]">
             <ShieldCheck className="w-5 h-5" />
           </div>
           <div>
             <div className="font-bold text-[var(--cn-text-main)] text-sm flex items-center gap-2">
-              <span>Admin Underwriter Operations Workbench</span>
-              <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+              <span>Underwriting Operations Console</span>
+              <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-[var(--cn-primary-tint)] text-[var(--cn-primary)] border border-[var(--cn-primary)]/30 font-mono">
                 ACTIVE
               </span>
             </div>
             <div className="text-xs text-[var(--cn-text-muted)] mt-0.5">
-              Signed in as <span className="text-indigo-400 font-semibold">{user?.email}</span> · Supabase Underwriter Permissions Active
+              Logged in as <span className="text-[var(--cn-primary)] font-semibold">{user?.email}</span> · Supabase Underwriter Permissions Verified
             </div>
           </div>
         </div>
@@ -163,27 +166,29 @@ export default function AdminDashboard({ user, onRefreshParent }) {
           className="cn-btn cn-btn-secondary text-xs py-1.5 px-3 flex-shrink-0 cursor-pointer"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-          <span>Refresh Data</span>
+          <span>Refresh Workspace</span>
         </button>
       </div>
 
-      {/* Segmented Section Navigation */}
-      <div className="flex flex-wrap gap-1.5 bg-[var(--cn-surface)] border border-[var(--cn-border)] rounded-2xl p-1.5 shadow-xs">
+      {/* ── Segmented Section Navigation ── */}
+      <div className="flex flex-wrap gap-1.5 bg-[var(--cn-surface-elevated)] border border-[var(--cn-border)] rounded-2xl p-1.5 shadow-xs">
         {navItems.map(({ key, label, icon: Icon, badge }) => (
           <button
             key={key}
             onClick={() => setActiveSection(key)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer ${
               activeSection === key
-                ? 'bg-sky-500 text-white shadow-xs'
-                : 'text-[var(--cn-text-muted)] hover:text-[var(--cn-text-main)] hover:bg-[var(--cn-surface-elevated)]'
+                ? 'bg-[var(--cn-primary)] text-white dark:text-slate-950 font-bold shadow-xs'
+                : 'text-[var(--cn-text-muted)] hover:text-[var(--cn-text-main)] hover:bg-[var(--cn-surface)]'
             }`}
           >
             <Icon className="w-4 h-4" />
             <span>{label}</span>
             {badge !== undefined && (
-              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                activeSection === key ? 'bg-white/20 text-white' : 'bg-[var(--cn-surface-elevated)] text-[var(--cn-text-muted)]'
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold font-mono ${
+                activeSection === key
+                  ? 'bg-black/20 text-white dark:text-slate-950'
+                  : 'bg-[var(--cn-surface)] text-[var(--cn-text-muted)] border border-[var(--cn-border)]'
               }`}>{badge}</span>
             )}
           </button>
@@ -195,13 +200,13 @@ export default function AdminDashboard({ user, onRefreshParent }) {
         <div className="space-y-6 animate-fadeIn">
           
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <MetricCard icon={Clock}        label="Pending Reviews"     value={pendingApps.length} sub="Awaiting underwriter decision" color="amber" pulse={pendingApps.length > 0} />
-            <MetricCard icon={CheckCircle2} label="Reviewed & Decided"  value={reviewedApps.length} sub="Approved / Rejected / Deferred" color="emerald" />
-            <MetricCard icon={Activity}     label="Total Applications"  value={applications.length} sub="System total" color="sky" />
+            <MetricCard icon={Clock}        label="Pending Queue"      value={pendingApps.length} sub="Awaiting underwriter review" color="amber" pulse={pendingApps.length > 0} />
+            <MetricCard icon={CheckCircle2} label="Reviewed & Decided" value={reviewedApps.length} sub="Approved / Rejected / Deferred" color="emerald" />
+            <MetricCard icon={Activity}     label="Total Portfolio"    value={applications.length} sub="Logged evaluations" color="teal" />
           </div>
 
           {/* Pending Applications Section */}
-          <div className="cn-card overflow-hidden">
+          <div className="cn-card-solid overflow-hidden">
             <div className="p-5 border-b border-[var(--cn-border)] flex items-center justify-between">
               <SectionHeading icon={Clock} title="Pending Loan Approvals Queue" badge={`${pendingApps.length} Pending`} />
             </div>
@@ -209,8 +214,8 @@ export default function AdminDashboard({ user, onRefreshParent }) {
             {pendingApps.length === 0 ? (
               <div className="p-12 text-center text-[var(--cn-text-muted)] font-mono text-sm space-y-2">
                 <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto" />
-                <div className="font-semibold text-[var(--cn-text-main)]">All Pending Applications Reviewed!</div>
-                <div className="text-xs text-[var(--cn-text-subtle)]">There are currently no applications waiting for administrative review.</div>
+                <div className="font-semibold text-[var(--cn-text-main)]">Review Queue Clear</div>
+                <div className="text-xs text-[var(--cn-text-subtle)]">All submitted loan applications have been reviewed by underwriters.</div>
               </div>
             ) : (
               <div className="divide-y divide-[var(--cn-border)]">
@@ -240,14 +245,14 @@ export default function AdminDashboard({ user, onRefreshParent }) {
                         <div className="flex items-center gap-3 bg-[var(--cn-surface-elevated)] border border-[var(--cn-border)] p-3 rounded-xl flex-shrink-0">
                           <div>
                             <div className="text-[10px] text-[var(--cn-text-subtle)] font-mono">ML Suggestion</div>
-                            <div className={`text-xs font-bold font-mono ${isMlApproved ? 'text-emerald-500' : 'text-rose-500'}`}>
+                            <div className={`text-xs font-bold font-mono ${isMlApproved ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                               {app.decision} ({Math.round((app.probability || 0) * 100)}%)
                             </div>
                           </div>
                           <div className="h-6 w-px bg-[var(--cn-border)]" />
                           <div className="text-right">
                             <div className="text-[10px] text-[var(--cn-text-subtle)] font-mono">Cutoff</div>
-                            <div className="text-xs font-bold font-mono text-sky-500">{app.threshold || 0.4145}</div>
+                            <div className="text-xs font-bold font-mono text-[var(--cn-primary)]">{app.threshold || 0.4145}</div>
                           </div>
                         </div>
                       </div>
@@ -287,7 +292,7 @@ export default function AdminDashboard({ user, onRefreshParent }) {
                           <button
                             onClick={() => handleReviewAction(app.id, 'deferred')}
                             disabled={isProcessing}
-                            className="flex items-center justify-center gap-1 px-3 py-2 rounded-xl bg-[var(--cn-surface-elevated)] hover:bg-[var(--cn-surface-muted)] text-indigo-400 border border-indigo-500/30 text-xs font-semibold transition disabled:opacity-50 cursor-pointer"
+                            className="flex items-center justify-center gap-1 px-3 py-2 rounded-xl bg-[var(--cn-surface-elevated)] hover:bg-[var(--cn-surface-muted)] text-[var(--cn-accent-secondary)] border border-[var(--cn-border)] text-xs font-semibold transition disabled:opacity-50 cursor-pointer"
                             title="Defer decision pending documentation"
                           >
                             <Clock className="w-3.5 h-3.5" />
@@ -303,7 +308,7 @@ export default function AdminDashboard({ user, onRefreshParent }) {
           </div>
 
           {/* Decided Applications Section */}
-          <div className="cn-card overflow-hidden">
+          <div className="cn-card-solid overflow-hidden">
             <div className="p-5 border-b border-[var(--cn-border)] flex items-center justify-between">
               <SectionHeading icon={FileCheck} title="Reviewed Applications Archive" badge={`${reviewedApps.length} Decided`} />
             </div>
@@ -359,20 +364,20 @@ export default function AdminDashboard({ user, onRefreshParent }) {
       {activeSection === 'overview' && (
         <div className="space-y-6 animate-fadeIn">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <MetricCard icon={Target}   label="CV Accuracy"        value="80.08%"  sub="± 3.24% (5-fold CV)"     color="sky" />
+            <MetricCard icon={Target}   label="CV Accuracy"        value="80.08%"  sub="± 3.24% (5-fold CV)"     color="teal" />
             <MetricCard icon={Award}    label="Holdout ROC-AUC"    value="0.8227"  sub="122 holdout test rows"   color="emerald" />
             <MetricCard icon={Cpu}      label="Decision Cutoff"    value={threshold.toString().slice(0, 7)} sub="Calibrated F1 threshold" color="indigo" />
             <MetricCard icon={Database} label="Model Architecture" value="Cal. LR" sub="Artifact pipeline v1.0" color="amber" />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <MetricCard icon={Users}       label="Registered Users"  value={userStats.total}   sub={`${userStats.admins} admins · ${userStats.regular} users`} color="sky" />
+            <MetricCard icon={Users}       label="Registered Users"  value={userStats.total}   sub={`${userStats.admins} admins · ${userStats.regular} users`} color="teal" />
             <MetricCard icon={FileText}    label="Logged App Events" value={auditStats.appCreated} sub="In audit ledger" color="emerald" />
             <MetricCard icon={Activity}    label="Logged Sessions"   value={auditStats.logins} sub="Captured in system log" color="indigo" pulse />
           </div>
 
           {/* Confusion Matrix */}
-          <div className="cn-card p-6">
+          <div className="cn-card-solid p-6">
             <SectionHeading icon={BarChart3} title="Holdout Confusion Matrix (Test Set)" />
             <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto text-center font-mono">
               {[
@@ -395,7 +400,7 @@ export default function AdminDashboard({ user, onRefreshParent }) {
       {/* ── USERS ── */}
       {activeSection === 'users' && (
         <div className="space-y-4 animate-fadeIn">
-          <div className="cn-card overflow-hidden">
+          <div className="cn-card-solid overflow-hidden">
             <div className="p-5 border-b border-[var(--cn-border)]">
               <SectionHeading icon={Users} title="Registered User Accounts" badge={`${users.length} total`} />
             </div>
@@ -405,7 +410,7 @@ export default function AdminDashboard({ user, onRefreshParent }) {
               <div className="divide-y divide-[var(--cn-border)]">
                 {users.map((u, idx) => (
                   <div key={u.id || idx} className="p-4 flex items-center gap-4 hover:bg-[var(--cn-surface-elevated)] transition">
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#0284c7] to-[#4f46e5] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[var(--cn-primary)] to-[var(--cn-accent-secondary)] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                       {(u.full_name || u.email || 'U')[0].toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -432,12 +437,12 @@ export default function AdminDashboard({ user, onRefreshParent }) {
       {activeSection === 'audit' && (
         <div className="space-y-4 animate-fadeIn">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            <MetricCard icon={Activity}     label="Total Log Entries"    value={auditLogs.length} color="sky" />
+            <MetricCard icon={Activity}     label="Total Log Entries"    value={auditLogs.length} color="teal" />
             <MetricCard icon={FileText}     label="App Created Events"   value={auditStats.appCreated} color="emerald" />
             <MetricCard icon={CheckCircle2} label="User Logins"          value={auditStats.logins} color="indigo" />
           </div>
 
-          <div className="cn-card overflow-hidden">
+          <div className="cn-card-solid overflow-hidden">
             <div className="p-5 border-b border-[var(--cn-border)]">
               <SectionHeading icon={Activity} title="System Audit Trail & Security Ledger" badge={`${auditLogs.length} events`} />
             </div>
@@ -453,7 +458,7 @@ export default function AdminDashboard({ user, onRefreshParent }) {
                     <div key={log.id || idx} className="p-4 flex items-start gap-3 hover:bg-[var(--cn-surface-elevated)] transition">
                       <div className={`mt-0.5 p-1.5 rounded-lg flex-shrink-0 ${
                         isApp ? 'bg-emerald-500/10 text-emerald-500' :
-                        isLogin ? 'bg-sky-500/10 text-sky-500' :
+                        isLogin ? 'bg-[var(--cn-primary-tint)] text-[var(--cn-primary)]' :
                         isReg ? 'bg-indigo-500/10 text-indigo-400' :
                         'bg-[var(--cn-surface-elevated)] text-[var(--cn-text-muted)]'
                       }`}>
@@ -494,7 +499,7 @@ export default function AdminDashboard({ user, onRefreshParent }) {
       {activeSection === 'model' && (
         <div className="space-y-6 animate-fadeIn">
           {/* Model Comparison Table */}
-          <div className="cn-card overflow-hidden">
+          <div className="cn-card-solid overflow-hidden">
             <div className="p-5 border-b border-[var(--cn-border)] flex items-center justify-between">
               <SectionHeading icon={BarChart3} title="Model Selection & Baseline Comparison" />
               <span className="text-xs text-[var(--cn-text-muted)] font-mono">Leakage-Free 80/20 Holdout</span>
@@ -523,10 +528,10 @@ export default function AdminDashboard({ user, onRefreshParent }) {
                   ]).map(([modelName, data], idx) => {
                     const isWinner = modelName.includes('Tuned') || modelName.includes('★');
                     return (
-                      <tr key={idx} className={isWinner ? 'bg-emerald-500/10 font-bold text-emerald-400' : 'hover:bg-[var(--cn-surface-elevated)]'}>
+                      <tr key={idx} className={isWinner ? 'bg-[var(--cn-primary-tint)] font-bold text-[var(--cn-primary)]' : 'hover:bg-[var(--cn-surface-elevated)]'}>
                         <td className="p-3 font-semibold flex items-center gap-2">
                           <span>{modelName}</span>
-                          {isWinner && <span className="px-1.5 py-0.2 rounded text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">SELECTED</span>}
+                          {isWinner && <span className="px-1.5 py-0.2 rounded text-[9px] bg-[var(--cn-primary-tint)] text-[var(--cn-primary)] border border-[var(--cn-primary)]/30">SELECTED</span>}
                         </td>
                         <td className="p-3">{Math.round((data?.cv_train_oof?.accuracy || 0) * 10000) / 100}%</td>
                         <td className="p-3">{data?.cv_train_oof?.roc_auc?.toFixed(4) || 'N/A'}</td>
@@ -541,7 +546,7 @@ export default function AdminDashboard({ user, onRefreshParent }) {
           </div>
 
           {/* Feature Coefficients */}
-          <div className="cn-card overflow-hidden">
+          <div className="cn-card-solid overflow-hidden">
             <div className="p-5 border-b border-[var(--cn-border)]">
               <SectionHeading icon={Table} title="Learned Model Feature Weights" badge="Logistic Regression" />
             </div>
@@ -556,7 +561,7 @@ export default function AdminDashboard({ user, onRefreshParent }) {
                       <div className="w-36 text-xs text-[var(--cn-text-muted)] font-mono truncate">{row.feature}</div>
                       <div className="flex-1 bg-[var(--cn-surface-muted)] rounded-full h-2 overflow-hidden">
                         <div
-                          className={`h-full rounded-full ${isPos ? 'bg-gradient-to-r from-emerald-600 to-emerald-400' : 'bg-gradient-to-r from-rose-700 to-rose-500'}`}
+                          className={`h-full rounded-full ${isPos ? 'bg-emerald-500' : 'bg-rose-500'}`}
                           style={{ width: `${pct}%` }}
                         />
                       </div>
@@ -572,13 +577,13 @@ export default function AdminDashboard({ user, onRefreshParent }) {
 
           {/* Holdout Metrics Details */}
           {Object.keys(holdout).length > 0 && (
-            <div className="cn-card p-5">
+            <div className="cn-card-solid p-5">
               <SectionHeading icon={Award} title="Final Calibrated Holdout Metrics" />
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {Object.entries(holdout).map(([k, v]) => (
                   <div key={k} className="bg-[var(--cn-surface-elevated)] border border-[var(--cn-border)] p-3 rounded-xl text-center">
                     <div className="text-[10px] text-[var(--cn-text-muted)] font-mono uppercase mb-1">{k.replace(/_/g, ' ')}</div>
-                    <div className="text-lg font-bold text-sky-500 font-mono">
+                    <div className="text-lg font-bold text-[var(--cn-primary)] font-mono">
                       {typeof v === 'number' ? (v > 1 ? v.toFixed(1) + '%' : v.toFixed(4)) : v}
                     </div>
                   </div>

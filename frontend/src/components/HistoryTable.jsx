@@ -37,7 +37,7 @@ export default function HistoryTable({ applications = [], onSelect, isAdmin = fa
 
   if (!applications || applications.length === 0) {
     return (
-      <div className="cn-card p-10 text-center text-[var(--cn-text-muted)] font-mono text-sm space-y-2">
+      <div className="cn-card-solid p-10 text-center text-[var(--cn-text-muted)] font-mono text-sm space-y-2">
         <History className="w-8 h-8 text-[var(--cn-text-subtle)] mx-auto mb-2" />
         <p className="font-semibold text-[var(--cn-text-main)]">No Evaluation History Available</p>
         <p className="text-xs text-[var(--cn-text-subtle)]">Run an applicant risk screening to generate evaluation audit logs.</p>
@@ -46,15 +46,15 @@ export default function HistoryTable({ applications = [], onSelect, isAdmin = fa
   }
 
   return (
-    <div className="cn-card p-6 overflow-hidden">
+    <div className="cn-card-solid p-6 overflow-hidden">
       
       {/* Table Header & Controls */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5 pb-4 border-b border-[var(--cn-border)]">
         <div>
           <h3 className="text-base font-bold text-[var(--cn-text-main)] flex items-center gap-2">
-            <History className="w-4 h-4 text-sky-500" />
+            <History className="w-4 h-4 text-[var(--cn-primary)]" />
             <span>Assessment Records Repository</span>
-            <span className="ml-1 text-[11px] font-mono px-2 py-0.5 rounded-full bg-[var(--cn-surface-elevated)] text-[var(--cn-accent)] border border-[var(--cn-border)]">
+            <span className="ml-1 text-[11px] font-mono px-2 py-0.5 rounded-full bg-[var(--cn-surface-elevated)] text-[var(--cn-primary)] border border-[var(--cn-border)]">
               {filteredApplications.length} of {applications.length}
             </span>
           </h3>
@@ -65,15 +65,25 @@ export default function HistoryTable({ applications = [], onSelect, isAdmin = fa
 
         {/* Controls: Search & Status Filter */}
         <div className="flex flex-wrap items-center gap-2.5">
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 text-[var(--cn-text-subtle)] absolute left-3 top-2.5" />
+          <div className="cn-input-wrapper w-48 sm:w-56">
+            <Search className="cn-input-icon-lead !left-3 !w-3.5 !h-3.5" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search applicant or cluster..."
-              className="cn-input pl-8.5 py-1.5 text-xs w-48 sm:w-56"
+              className="cn-input !pl-8.5 !pr-8 py-1.5 text-xs"
             />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                aria-label="Clear search"
+                className="cn-input-icon-trail !right-2 text-[var(--cn-text-subtle)] hover:text-[var(--cn-text-main)] cursor-pointer"
+              >
+                <XCircle className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-1 bg-[var(--cn-surface-elevated)] p-1 rounded-xl border border-[var(--cn-border)]">
@@ -153,7 +163,7 @@ export default function HistoryTable({ applications = [], onSelect, isAdmin = fa
                         <span>{status.toUpperCase()}</span>
                       </span>
                     </td>
-                    <td className="p-3 font-bold font-mono text-[var(--cn-accent)]">
+                    <td className="p-3 font-bold font-mono text-[var(--cn-primary)]">
                       {Math.round((row.probability || 0) * 100)}%
                     </td>
                     <td className="p-3 text-[var(--cn-text-muted)] truncate max-w-[130px]">

@@ -8,18 +8,18 @@ export default function ExplainabilityCard({ topFactors = [] }) {
 
   return (
     <div className="cn-card p-6">
-      <div className="flex items-center justify-between mb-4 pb-3 border-b border-[var(--cn-border)]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-[var(--cn-border)]">
         <div>
-          <h3 className="text-base font-bold text-[var(--cn-text-main)] flex items-center gap-2">
-            <Activity className="w-4 h-4 text-sky-500" />
+          <h3 className="text-sm font-bold text-[var(--cn-text-main)] flex items-center gap-2">
+            <Activity className="w-4 h-4 text-[var(--cn-primary)]" />
             <span>Top Contributing Decision Factors</span>
           </h3>
           <p className="text-xs text-[var(--cn-text-muted)] mt-0.5">
             Individual parametric weights driving the calibrated credit decision
           </p>
         </div>
-        <span className="text-[11px] text-[var(--cn-text-subtle)] font-mono bg-[var(--cn-surface-elevated)] px-2.5 py-1 rounded-lg border border-[var(--cn-border)]">
-          Logistic Weights
+        <span className="text-[10px] text-[var(--cn-text-subtle)] font-mono bg-[var(--cn-surface-elevated)] px-2.5 py-1 rounded-lg border border-[var(--cn-border)] self-start sm:self-auto">
+          Parametric Weights
         </span>
       </div>
 
@@ -27,7 +27,7 @@ export default function ExplainabilityCard({ topFactors = [] }) {
         {topFactors.map((factor, idx) => {
           const isPos = factor.direction === 'positive';
           const mag = Math.abs(factor.impact);
-          const barWidth = Math.min(100, Math.max(15, mag * 50));
+          const barWidth = Math.min(100, Math.max(12, mag * 48));
 
           return (
             <div
@@ -37,17 +37,19 @@ export default function ExplainabilityCard({ topFactors = [] }) {
               <div className="flex items-center justify-between text-xs mb-2">
                 <span className="font-semibold text-[var(--cn-text-main)] flex items-center gap-2">
                   {isPos ? (
-                    <span className="p-1 rounded-md bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                    <span className="p-1 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                       <TrendingUp className="w-3.5 h-3.5" />
                     </span>
                   ) : (
-                    <span className="p-1 rounded-md bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                    <span className="p-1 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
                       <TrendingDown className="w-3.5 h-3.5" />
                     </span>
                   )}
                   <span>{factor.feature}</span>
                 </span>
-                <span className={`font-mono font-bold text-xs ${isPos ? 'text-emerald-500 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
+                <span className={`font-mono font-bold text-xs ${
+                  isPos ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                }`}>
                   {isPos ? '+' : ''}{factor.impact}
                 </span>
               </div>
