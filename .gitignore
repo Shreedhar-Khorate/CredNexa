@@ -105,3 +105,11 @@ Thumbs.db
 *.sublime-project
 *.sublime-workspace
 
+# ------------------------------------------------------------------------------
+# 5. Database & Local Storage
+# ------------------------------------------------------------------------------
+*.sqlite
+*.sqlite3
+*.db
+backend/crednexa.db
+
